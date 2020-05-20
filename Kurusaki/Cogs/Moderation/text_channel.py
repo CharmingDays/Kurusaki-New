@@ -9,7 +9,7 @@ class TextChannel(commands.Cog):
 
 
     @commands.cooldown(per=20,rate=2,type=commands.BucketType.guild)
-    @command(name='cmsgs')
+    @command(name='chan-msgs')
     async def channelMessages(self,msg,user:discord.Member=None):
         amts=0
         await msg.send(f"Processing {msg.channel.mention}'s messages...")
@@ -31,7 +31,7 @@ class TextChannel(commands.Cog):
         
 
     @commands.cooldown(per=60,rate=1,type=commands.BucketType.guild)
-    @command(name='servermsgs')
+    @command(name='server-msgs')
     async def servermessages(self,msg,user:discord.Member=None):
         amts=0
         await msg.send(f"Processing {msg.guild.name} messages...")
@@ -59,7 +59,6 @@ class TextChannel(commands.Cog):
 
 
 
-
     @commands.group(name='msg')
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
@@ -75,6 +74,7 @@ class TextChannel(commands.Cog):
         """
         Clears 100 messages inside the text channel
         `Ex:` .clear
+        
         """
         if _limit >= 2000:
             _limit=2000
