@@ -225,7 +225,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
         """
         if pages > 60:
             pages=60
-            await msg.send("Pages can't exceed 60",delete_after=60)
+            await msg.send("Pages can't exceed 60")
         new_voice=self.voice.copy()
         new_voice.pop('_id')
         ranks=""

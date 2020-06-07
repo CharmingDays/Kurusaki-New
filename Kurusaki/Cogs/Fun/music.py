@@ -166,7 +166,7 @@ class MusicPlayer(commands.Cog,name='Music'):
             await self.playlist(data,msg)
             return await msg.send(f"Added playlist {data['title']} to queue") #NOTE: needs to be embeded to make it better output
         self.player[msg.guild.id]['queue'].append({'title':title,'author':msg})
-        return await msg.send(f"**{title} added to queue**".title(),delete_after=60)
+        return await msg.send(f"**{title} added to queue**".title())
 
 
 

@@ -138,7 +138,7 @@ class Economy(Cog):
         """
         if amts > 100:
             amts = 90
-            await msg.send(f"Can't view above {amts} yet",delete_after=30)
+            await msg.send(f"Can't view above {amts} yet")
         remove_user=[]
         leads=[]
         new_data=self.data.copy()
