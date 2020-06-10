@@ -77,7 +77,7 @@ class TextChannel(commands.Cog):
             
 
 
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(manage_messages=True,read_message_history=True)
     @command(name='clear-msgs')
     async def clear_messages(self,msg,_limit=100):
         """
@@ -86,12 +86,13 @@ class TextChannel(commands.Cog):
         `Note:` Has a limit of 2000 and messages must not be older than 14 days.
         `Permissions:` Manage Messages
         """
-
+        await msg.send("Please wait while the bot tries to delete all possible messages")
         if _limit >= 2000:
             _limit=2000
-            await msg.send("Purge limit has exceeded 2000")
+            await msg.send("Purge limit has exceeded 2000, setting new limit to 2000")
+            await asyncio.sleep(3)
         await msg.channel.purge(limit=_limit)
-        return await msg.send('✅') #NOTE: Can't use reaction as it deletes the messages
+        return await msg.send(f'{msg.author.mention} ✅',delete_after=20) #NOTE: Can't use reaction as it deletes the messages
 
 
 

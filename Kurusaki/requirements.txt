@@ -1,0 +1,11 @@
+python-dotenv
+discord
+requests
+names
+nekos.py
+pymongo
+dnspython
+youtube-dl
+RandomWords
+bs4
+PyNaCl

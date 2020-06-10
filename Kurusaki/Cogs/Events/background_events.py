@@ -1,8 +1,10 @@
-import discord,asyncio,time,random,names,requests as rq,pymongo,os
+import discord,asyncio,time,random,names,requests as rq,pymongo,os,json
 from discord.ext import commands
 from discord.ext.commands import command,Cog
 from discord.utils import sleep_until
 import datetime
+import subprocess
+from discord.ext import tasks
 
 
 class BackgroundEvents(commands.Cog,name='Events'):
@@ -11,6 +13,24 @@ class BackgroundEvents(commands.Cog,name='Events'):
         bot.loop.create_task(self.check_and_update())
         self.database=pymongo.MongoClient(os.getenv('MONGO'))['Discord-Bot-Database']['General']
         self.voice=self.database.find_one("voice")
+        self.member_join=self.database.find_one("member_join")
+        self.force_logout=False
+
+
+
+    @command()
+    async def logout(self,msg):
+        await msg.send(os.listdir())
+        self.force_logout=True
+        await self.bot.logout()
+
+    def cog_unload(self):
+        if self.force_logout is True:
+            subprocess.call(r"kurusaki.py",shell=True)
+
+        else:
+            subprocess.call(r"Cogs\Events\on_logout.py",shell=True)
+
 
 
     async def check_and_update(self):
@@ -18,23 +38,11 @@ class BackgroundEvents(commands.Cog,name='Events'):
         !--RUN ALL CONSISTANT BACKGROUND FUNCTIONS IN HERE--!
         """
         while True:
-            currentWelcome=self.database.find_one('welcome')
             currentVoice=self.database.find_one('voice')
-            if self.welcome != currentWelcome:
-                self.database.update_one({'_id':'welcome'},{'$set':self.welcome})
             
             if self.voice != currentVoice:
                 self.database.update_one({'_id':'voice'},{'$set':self.voice})
             
-            for msg in self.temp_msg.copy():
-                if time.time() >= msg:
-                    try:
-                        await self.temp_msg[msg].delete()
-                        self.temp_msg.pop(msg)
-                    except:
-                        self.temp_msg.pop(msg)
-                        #Message already deleted?
-
             await asyncio.sleep(750)
 
 
@@ -44,25 +52,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
         """
         Keeps track of how long users have been in a voice call
         """
-        if user.bot == True:
-            #Don't track bots
-            return
-        
-        if str(user.id) not in self.voice:
-            self.voice[str(user.id)]=0
-
-        if after.channel is not None:
-            #User joins voice
-            if str(user.id) in self.voice:
-                self.local_voice_timer[user.id]=time.time()
-
-
-        if after.channel is None:
-            #User leaves voice channel
-            if user.id in self.local_voice_timer and str(user.id) in self.voice:
-                self.voice[str(user.id)]+=int(time.time()-self.local_voice_timer[user.id])
-                self.local_voice_timer.pop(user.id)
-
+        pass
 
     @Cog.listener('on_command')
     async def cmd_counter(self,msg):
@@ -70,54 +60,76 @@ class BackgroundEvents(commands.Cog,name='Events'):
             msg.command.reset_cooldown(msg)
 
 
+    @Cog.listener('on_member_join')
+    async def member_welcome(self,user):
+        if user.guild.id == "my guild id":
+            chan=self.bot.get_channel(628174714313113600)
+            emojis=[self.bot.get_emoji(720136533608366121),self.bot.get_emoji(720136639992561735),self.bot.get_emoji(720137028448026656)]
+            message=await chan.send("Please reaction reaction on this message to get access to the desired game channels")
+            for emote in emojis:
+                await message.add_reaction(emoji=emote)
+
+        if str(user.guild.id) in self.member_join:
+            chan=self.bot.get_channel(self.member_join[str(user.guild.id)]['greetings'])
+            if chan is None:
+                _user=self.bot.get_user(user.guild.owner_id)
+                self.member_join.pop(str(user.guild.id))
+                return await _user.send(f"The bot was unable to get the specifyied channel <#{self.member_join[str(user.guild.id)]['greetings']}>.\nThe bot has removed the auto new member welcomer, please reset it again.")
+
+            if chan is not None:
+                return await chan.send(f"{random.choice(self.member_join[str(user.guild.id)]['messages'])}")
+
+
 
 
     @Cog.listener('on_reaction_add')
-    async def reaction_message_remove(self,emoji,user):
+    async def reaction_message_remove(self,emote,user):
         if user.id != self.bot.user.id:
-            if emoji.message.guild is not None and user.guild_permissions.manage_messages is True and emoji.message.author.id == self.bot.user.id:
-                return await emoji.message.delete()
-            if emoji.message.guild is None and emoji.message.author.id == self.bot.user.id:
-                return await emoji.message.delete()
+    
+            if emote.custom_emoji is True and emote.emoji.id == 720136533608366121: #NOTE:VALORANT
+                role= [user.guild.get_role(705234981319999488)]
+                await user.edit(roles=user.roles+role)
+
+            if emote.custom_emoji is True and emote.emoji.id == 720136639992561735:#NOTE:LEAGUE
+                role=[user.guild.get_role(719780262753337394)]
+                await user.edit(roles=user.roles+role)
+
+            if emote.custom_emoji is True and emote.emoji.id == 720137028448026656: #NOTE:OVERWATCH
+                role=[user.guild.get_role(720174578504171581)]
+                await user.edit(roles=user.roles+role)
+
+            #TODO: MAKE IT SO THAT IT'S CUSTOM EMOJI SO THAT IT'S MORE SPECIFIC
+            # if emote.message.guild is not None and user.guild_permissions.manage_messages is True and emote.message.author.id == self.bot.user.id:
+            #     return await emote.message.delete()
+            # if emote.message.guild is None and emote.message.author.id == self.bot.user.id:
+            #     return await emote.message.delete()
 
 
 
     @Cog.listener('on_message')
     async def message_tracker(self,msg):
-        if msg.author.id == self.bot.user.id:
-            await msg.add_reaction(emoji='❌')
+        #TODO: REPLACE THE X EMOJI WITH A CUSTOM "DELETE_MESSAGE" EMOJI
+        # if msg.author.id == self.bot.user.id:
+        #     await msg.add_reaction(emoji='❌')
 
         if msg.author.bot is True:
             return
         
 
-        if msg.channel.type != discord.TextChannel:
-            return None
-
         
 
     @commands.Cog.listener('on_command_error')
     async def all_command_error(self,msg,error):
-        if self.error_chan is None:
-            self.error_chan=self.bot.get_channel(self.error_log)
 
         #TODO: Attempt to make a correction suggestion here using `re` lib
         if isinstance(error,commands.CommandOnCooldown):
             return await msg.send(f"Command is on cooldown, please try again in {round(error.cooldown.retry_after,2)} seconds")
         
-        if isinstance(error,commands.MissingRequiredArgument):
-            pass
-            #TODO:Command argument is missing with the value parm
-    
-        if isinstance(error,commands.BadArgument):
-            #TODO: add a fix for this error
-            pass
 
         if isinstance(error,commands.CommandError):
             if '60003' in error.args[0]:
                 return await msg.send("Two factor is enabled for the server, please disable it temporarily to use the command")
     
-            print(error)
 
         if isinstance(error,commands.PrivateMessageOnly):
             return await msg.send("This command can only be used inside a private message (PM/DM)")
@@ -125,47 +137,32 @@ class BackgroundEvents(commands.Cog,name='Events'):
         if isinstance(error,commands.NoPrivateMessage):
             return await msg.send("Command unable to run inside a private message (PM/DM")
 
-        if isinstance(error,commands.CheckAnyFailure):
-            #TODO: add a fix for this error
-            pass
 
         if isinstance(error,commands.CommandNotFound) and msg.guild.id != 264445053596991498:
             content=msg.message.content.replace(f"{msg.prefix}","")
             return await msg.send(f"Command {content} is not found")
 
-        if isinstance(error,commands.DisabledCommand):
-            return await msg.send(f"Command {msg.command.name} is disabled")
-
-        if isinstance(error,commands.TooManyArguments):
-            return await msg.send("Too many values were used for the command")
-        
-        if isinstance(error,commands.CommandOnCooldown):
-            pass
-            #TODO: Add a fix for this error
-            # return await msg.send(f"Command is on cooldow for another {msg} seconds")
 
         if isinstance(error,commands.NotOwner):
             return await msg.send("This command is only for the bot owners")
 
-        if isinstance(error,commands.MissingPermissions):
-            #TODO: Add a fix for this error
-            pass
+        else:
+            read_file=open(r'Cogs\Events\error_logs.json','r')
+            data=json.loads(read_file.read())
+            read_file.close()
+            if str(error) not in data['logs']:
+                data['logs'].append(str(error))
+            file=open(r'Cogs\Events\error_logs.json','w')
+            file.write(json.dumps(data))
+            file.close()
 
 
-        if isinstance(error,commands.BotMissingPermissions):
-            #TODO: Add a fix for this error
-            pass
-        print(error)
-
-
-
-
-    @command()
-    async def voice(self,msg,user:discord.Member=None):
+    @command(name='voice-time')
+    async def voice_time(self,msg,user:discord.Member=None):
         """
         Shows how long your or mentioned user has stayed in a voice channel
-        `Ex:` .voice
-        `Ex:` .voice @User1
+        `Ex:` .voice @User1 (If user is not mentioned, it'll send yours)
+        `Command:` voice-time(user:optional)
         """
         if user is None:
             if str(msg.author.id) in self.voice:
@@ -204,6 +201,9 @@ class BackgroundEvents(commands.Cog,name='Events'):
             self.voice[str(user.id)]=amt
             return await msg.message.add_reaction(emoji='✅')
 
+
+
+
     @commands.is_owner()
     @command(name='reset-voice-db')
     async def reset_voice_db(self,msg):
@@ -218,7 +218,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
     @command(name='voice-rank',aliases=['voiceRank'])
     async def voice_rank(self,msg,pages=10):
         """
-        Shows the top 10 tanks
+        Shows the top 10 ranks
         `Ex:` .voice-rank
         `Ex:` .voice-rank 20
         `Note:` Limit is 60
@@ -257,8 +257,6 @@ class BackgroundEvents(commands.Cog,name='Events'):
             return await msg.send(f"```yaml\n{ranks}```")
         except:
             return await msg.send("Something went wrong")
-
-
 
 
 

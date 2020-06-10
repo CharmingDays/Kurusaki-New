@@ -1,13 +1,13 @@
 import discord,time,asyncio
 from discord.ext import commands
-from random import choice as rnd
 from discord.ext.commands import errors, converter,command
-
+import subprocess
+from discord.ext import tasks
 
 class MyHelpCommand(commands.MinimalHelpCommand):
 
     async def send_bot_help(self, map):
-        bot_url="https://cdn.discordapp.com/avatars/683098157877297178/94225d350ea9803e86a618e110b54c7c.webp?size=1024"
+        self.context.bot.avatar_url
         embed = discord.Embed(colour=0x7ED321, title="Useful help commands", description=f"**For a list of modules** `{self.context.prefix}modules`\n**For help with a specific command** {self.context.prefix}help <Command Name>\n**For a list of all commands in a specific module**{self.context.prefix}help <Module Name>\n\n\n[Invite Me](https://discordapp.com/oauth2/authorize?client_id=683098157877297178&scope=bot&permissions=66186303) | [Support Server](https://discord.gg/jDFrFQC)")
         embed.set_thumbnail(url=self.context.bot.user.avatar_url)
         return await self.context.send(embed=embed)

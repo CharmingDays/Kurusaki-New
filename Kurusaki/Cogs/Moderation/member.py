@@ -8,15 +8,15 @@ class Member(commands.Cog):
     def __init__(self,bot):
         self.bot=bot
 
+
     @commands.has_permissions(manage_roles=True)
-    @command(aliases=['ar'])
+    @command(aliases=['add-role'])
     async def addrole(self,msg,opts:commands.Greedy[typing.Union[discord.Role,discord.Member]]):
         """
         Add mentioned role(s) to the mentioned user(s)
         `Ex:` .addrole @User1 @User2 @Role1 @Role2
         `Ex:` .addrole @Role1 @Role2 @User1 @User2
-        `Ex:` .addrole @Role1 @Role2 @User1
-        `Note:` Order doesn't matter as long as user and role is mentioned
+        `Note:` Order must be roles --> users or users---> roles
         If no member mentioned then adds it to command user
         """
         roles=[role for role in opts if isinstance(role,discord.Role)]
@@ -25,6 +25,7 @@ class Member(commands.Cog):
         found_member=False
         for member in opts:
             if isinstance(member,discord.Member):
+                #NOTE: member mentioned
                 found_member=True
                 await member.edit(roles=member.roles+roles)
 
@@ -66,7 +67,7 @@ class Member(commands.Cog):
 
 
     @commands.has_permissions(ban_members=True)
-    @command()
+    @command(enabled=False)
     async def ban(self,msg,users:commands.Greedy[discord.Member],*,reason=None):
         """
         Ban member(s) who are mentioned and give an optional reason at the end of the mentions.
@@ -80,7 +81,7 @@ class Member(commands.Cog):
         return await msg.send(f"Banned user(s) {' '.join([user.name for user in users])}")
                               
     @commands.has_permissions(ban_members=True)
-    @command()
+    @command(enabled=False)
     async def unban(self, ctx, _id: int):
         """
         Unbans a member with a given ID
@@ -100,7 +101,7 @@ class Member(commands.Cog):
 
 
     @commands.has_permissions(kick_members=True)
-    @command()
+    @command(enabled=False)
     async def kick(self,msg,users:commands.Greedy[discord.Member],reason=None):
         """
         Kick members that are mentioned and give an optional reason at the end.
@@ -115,7 +116,7 @@ class Member(commands.Cog):
 
 
     @commands.has_permissions(mute_members=True)
-    @command(aliases=['m'])
+    @command(aliases=['silence'])
     async def mute(self,msg,users:commands.Greedy[discord.Member]):
         """
         Server mute the mentioned member(s) in voice channels
@@ -128,12 +129,13 @@ class Member(commands.Cog):
 
 
     @commands.has_permissions(mute_members=True,administrator=True)
-    @command(aliases=['unMute'])
+    @command(name='un-mute',aliases=['unmute'])
     async def un_mute(self,msg,users:commands.Greedy[discord.Member]):
         """
         Server un-mute mentioned member(s) in voice channels
-        `Ex:` .unMute @Member1 @Member2
+        `Ex:` .un-mute @Member1 @Member2 (Can mention more than 1 user)
         `Permissions:` Mute Members
+        `Command:` un-mute(users:list)
         """
         for user in users:
             await user.edit(mute=False)
@@ -145,8 +147,9 @@ class Member(commands.Cog):
     async def deafen(self,msg,users:commands.Greedy[discord.Member]):
         """
         Server deafen mentioned member(s) in voice channels
-        `Ex:` .deafen @Member1 @Member2
+        `Ex:` .deafen @Member1 @Member2 (Can mention more than 1 user)
         `Permissions:` Deafen Members
+        `Command:` deafen(users:list)
         """
         for user in users:
             await user.edit(deafen=True)
@@ -154,12 +157,13 @@ class Member(commands.Cog):
 
 
     @commands.has_permissions(deafen_members=True,administrator=True)
-    @command(aliases=['und','un-deafen'])
+    @command(name='un-deafen')
     async def unDeafen(self,msg,users:commands.Greedy[discord.Member]):
         """
         Server deafen mentioned member(s) in voice channels
-        `Ex:` .unDeafen @Member1 @Member2
+        `Ex:` .un-deafen @Member1 @Member2
         `Permissions:` Deafen Members
+        `Command:` un-deafen(users:list)
         """
         for user in users:
             await user.edit(deafen=False)
@@ -174,8 +178,9 @@ class Member(commands.Cog):
         #TODO: Check if mentioned members are in voice channel first
         """
         Move member(s) to a different voice channel
-        `Ex:` .moveto @Member1 @Member2 Voice Channel Name
+        `Ex:` .moveto @Member1 @Member2 League of Legends
         `Permissions:` Move Members
+        `Command:` move-to(users:list,chan:required)
         """
         no_voice=[]
         for user in users:
@@ -193,10 +198,10 @@ class Member(commands.Cog):
     @command(aliases=['changenick','change-nick'])
     async def changenickname(self,msg,users:commands.Greedy[discord.Member],*,name=None):
         """
-        Change the server name of mentioned member(s
-        `Ex:` .changenickname @Member1 @Member2 Hunters
-            `Note:` All mentioned members' name will now be Hunters
+        Change the server name of mentioned member(s)
+        `Ex:` .changenickname @Member1 @Member2 Hunters (All mentioned members' name will now be Hunters)
         `Permissions:` Manage Nicknames
+        `Command:` changenick(users:list, new-name)
         """
         before=users
         if name is not None:
@@ -218,6 +223,7 @@ class Member(commands.Cog):
         Kick mentioned member(s) from a voice channel
         `Ex:` .kick-voice @Member1 @Member2
         `Permissions:` Manage Channels
+        `Command:` kick-voice(users:list)
         """
         for user in users:
             await user.edit(voice_channel=None)
