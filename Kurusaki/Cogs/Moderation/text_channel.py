@@ -90,7 +90,7 @@ class TextChannel(commands.Cog):
         if _limit >= 2000:
             _limit=2000
             await msg.send("Purge limit has exceeded 2000, setting new limit to 2000")
-            await asyncio.sleep(3)
+        await asyncio.sleep(3)
         await msg.channel.purge(limit=_limit)
         return await msg.send(f'{msg.author.mention} ✅',delete_after=20) #NOTE: Can't use reaction as it deletes the messages
 
@@ -295,9 +295,9 @@ class TextChannel(commands.Cog):
     async def delete_channel(self,msg,chan:discord.TextChannel=None):
         """
         Delete the current channel or a specific channel
-        `Ex:` s.delete-channel #memes-troll (If no channel is mentioned, it'll delete current one)
+        `Ex:` s.delete-channel #memes-troll (If no channel is mentioned, it'll delete the channel of command being used at)
         `Permissions:` Manage Channels
-        `Command:` delete-channel(channel-mentioned:optional)
+        `Command:` delete-channel(channel-mentioned:TextChannel|optional)
         """
         if chan is not None:
             await msg.send(f"Deleting {chan.name}...")
@@ -308,17 +308,6 @@ class TextChannel(commands.Cog):
             await asyncio.sleep(1)
             await msg.channel.delete(reason=f'Command used by {msg.author.name}({msg.author.id})')
 
-
-    @commands.has_permissions(manage_channels=True)
-    @command(aliases=['view-invites','server-invites','guild-invites'],hidden=True)
-    async def invites(self,msg):
-        """
-        View the channel's current invite codes
-        `Ex:` s.invites
-        `Permissions: Manage Channels
-        `Command:` invites() No input required
-        """
-        pass
 
 
 def setup(bot):

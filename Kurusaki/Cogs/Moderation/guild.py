@@ -1,9 +1,10 @@
-import discord,asyncio,time,random,names
+import discord,time,random,names
+import requests as rq
+import asyncio
+import typing
+import logging
 from discord.ext.commands import command
 from discord.ext import commands
-
-
-
 
 
 class Server(commands.Cog):
@@ -12,28 +13,63 @@ class Server(commands.Cog):
 
 
 
-    @command(name='guild-info')
+    def random_color(self):
+        return random.randint(1,255)
+
+
+    @commands.cooldown(type=commands.BucketType.channel,rate=1,per=3)
+    @command(name='server-info')
     async def guild_info(self,msg):
         """
         Get information about the guild
-        `Ex:` .guild-info
+        `Ex:` s.server-info
+        `Command:` server-info()
         """
-
+        emotes=""
+        for emote in msg.guild.emojis:
+            emotes+=f"<:{emote.name}:{emote.id}>"
+        emb=discord.Embed(title=f"{msg.guild.name} - {msg.guild.id}",description=msg.guild.description,color=discord.Color.from_rgb(self.random_color(),self.random_color(),self.random_color()))
+        emb.set_thumbnail(url=msg.guild.icon_url)
+        emb.add_field(name="Created Date",value=f"{msg.guild.created_at} UTC")
+        emb.add_field(name='AFK Channel',value=msg.guild.afk_channel)
+        emb.add_field(name="AFK Timer",value=f"{str(msg.guild.afk_timeout/60)[:4]} Minutes")
+        emb.add_field(name="Owner",value=msg.guild.owner.mention)
+        emb.add_field(name="Members",value=len(msg.guild.members))
+        emb.add_field(name="Text Channels",value=len(msg.guild.text_channels))
+        emb.add_field(name="Voice Channels",value=len(msg.guild.voice_channels))
+        emb.add_field(name="Categories",value=len(msg.guild.categories))
+        emb.add_field(name="Roles",value=len(msg.guild.roles))
+        emb.add_field(name=f'{len(msg.guild.emojis)} Emojis',value=emotes)
+        await msg.send(embed=emb)
 
     @commands.has_permissions(manage_guild=True)
-    @command()
-    async def new_icon(self,msg,*,url):
-        pass
-
-
-
-    @command()
-    async def boosters(self,msg):
+    @command(name='new-icon')
+    async def new_icon(self,msg,*,url=None):
         """
-        Get the list of the current server boosters
-        `Ex:` .boosters
+        Change the icon of the the server (Only PNG/JPEG supported, and GIF if availale to server)
+        `Ex:` s.new-icon https://i.pinimg.com/originals/7c/46/44/7c4644a00c5c1e46dda0d9263bf6cf62.jpg (Or upload an image)
         """
+        if url is None:
+            if msg.message.attachments:
+                try:
+                    image=rq.get(msg.message.attachments.url).content
+                    await msg.guild.edit(icon=image)
+                    return await msg.send(f"New server icon set to {msg.message.attachments}")
+                except Exception as Error:
+                    await msg.send("Bot was unable to set provided image as server icon")
 
+            return msg.send("Please upload an image to change the icon paste a url after command")
+
+        if url is not None:
+            try:
+                image=rq.get(url).content
+                await msg.guild.edit(icon=image,reason=f"Server icon changed by {msg.author.name} ({msg.author.id})")
+                return await msg.send(f"New icon set to {url}")
+            except Exception as Error:
+                return await msg.send("Could not use the provided image link as server icon")
+
+
+        
 
     @commands.has_permissions(manage_guild=True)
     @command(name='server-rename')
@@ -49,45 +85,44 @@ class Server(commands.Cog):
 
 
 
+
     @commands.has_permissions(manage_guild=True)
-    @command(name='AFK-Chan',aliases=['AFK-Voice'])
+    @command(name='afk-chan',aliases=['afk-voice'])
     async def AFK_Channel(self,msg,*,channelName:discord.VoiceChannel):
         """
-        Make a voice channel into an AFK Voice channel
-        `Ex:` s.AFK-Chan AFK People (Will attempt to find voice channel with "exact" name:case sensitive)
+        Make a voice channel into an AFK Voice channel and it's timer
+        `Ex:` s.afk-chan AFK-Voice-Channel (Will attempt to find voice channel with "exact" name:case sensitive)
         `Permissions:` Manage Guild
         `Command:` AFK-Chan(channel-name:required)
         """
-        await msg.guild.edit(afk_timeout=900,afk_channel=channelName,reason=f'AFK channel command used by {msg.author.name} ({msg.author.id})')
+        await msg.guild.edit(afk_channel=channelName,reason=f'AFK channel command used by {msg.author.name} ({msg.author.id})')
         await msg.message.add_reaction(emoji='✅')
         return await msg.send(f"Members will now be moved to {channelName} after being AFK for 15 minutes or more.")
 
 
-
     @commands.has_permissions(manage_guild=True)
-    @command(name='afk-timeout')
-    async def afk_timeout(self,msg,timer:int=900):
+    @command(name='afk-timer')
+    async def afk_timer(self,msg,timer:typing.Optional[int]=300):
         """
-        Change the AFK timeout timer for the server value of seconds
-        `Ex:` s.afk-timeout 1200 (Sets timer to 1200 (20 min) seconds for moving member to afk channel)
-        `Note:` entered values must be an "integer"
+        Change the AFK voice timer in seconds
+        `Ex:` s.afk-timer 449
         `Permissions:` Manage Guild
-        `Command:` afk-timeout(timer:required)
+        `Command:` afk-timer(time:integer|optional)
         """
-        try:
-            int(timer)
-        except:
-            return await msg.send("Please enter an integer.")
-        
-        await msg.guild.edit(afk_timeout=timer)
-        return await msg.send(f"AFK timeout set to {timer/60} minutes.")
-
+        new_time=str(timer/60)
+        await msg.guild.edit(afk_timeout=timer,reason=f"AFK timer changed by {msg.author.name} ({msg.author.id})")
+        return await msg.send(f"AFK timer changed to {new_time[:3]}")
 
 
     @commands.has_permissions(manage_guild=True)
     @command()
-    async def guild_invites(self,msg):
-        pass
+    async def invites(self,msg):
+        codes=await msg.guild.invites()
+        
+        if codes:
+            return await msg.send("`{}`".format(' \ndiscord.gg/'.join(codes)))
+
+        return await msg.send("No current active invites found.")
     
     
     @commands.has_permissions(manage_roles=True)
@@ -104,77 +139,25 @@ class Server(commands.Cog):
         #TODO: make it so that it can manage permissions for the role via reactions of the role in embeds
 
 
-    @commands.has_permissions(kick_members=True)
-    @command(aliases=['boot'])
-    async def kick(self,msg,*users:discord.Member):
-        """
-        Kick out the mentioned users
-        `Ex:` s.kick @User1 @User2 @User3
-        `Permissions:` Kick Members
-        `Command:` kick(users:list)
-        """
-
-        if not users:
-            return await msg.send("Please enter the name of the user(s) to kick from the server or mention them.")
-
-        if users:
-            booted=[]
-            failed=[]
-            for user in users:
-                try:
-                    await msg.guild.kick(user=user)
-                    booted.append(user.name)
-                except:
-                    failed.append(user.name)
-
-            if booted:
-                await msg.send(f"Booted {', '.join(booted)}")
-
-            if failed:
-                await msg.send(f"Failed to kick the members {', '.join(failed)}")
-
-
 
     @commands.has_permissions(ban_members=True)
-    @command(aliases=['banish'])
-    async def ban(self,msg,*users:discord.Member):
+    @command(enabled=False)
+    async def unban(self, ctx, _id: int):
         """
-        Ban out the mentioned users
-        `Ex:` s.ban @User1 @User2 @User3
-        `Permissions:` Ban Members
-        `Command:` ban(users:list)
+        Unbans a member with a given ID
+        `Ex:` .unban 392839428348
+        `Permission:` Ban Members
         """
-        if not users:
-            return await msg.send("Please mention the user(s) to ban from the server")
-        
-        if users:
-            banned=[]
-            failed=[]
-            for user in users:
-                try:
-                    await msg.guild.ban(user=user)
-                    banned.append(user.name)
-                except:
-                    failed.append(user.name)
-
-
-            if banned:
-                await msg.send(f"Banned the following members from the server {', '.join(banned)}")
-
-            if failed:
-                await msg.send(f"Failed to ban the following members {', '.join(failed)}")
-
-    @commands.has_permissions(ban_members=True)
-    @command()
-    async def unban(self,msg,user:int):
+        user = self.bot.get_user(_id)
         try:
-            int(user)
+            await ctx.guild.unban(user)
         except:
-            return await msg.send("Please enter the user's ID")
-            
-        user_obj=self.bot.get_user(user)
-        await msg.guild.unban(user=user_obj,reason=f"User unbanned by {msg.author.name} ({msg.author.id})")
-        await msg.send(f"{msg.author.name} has unbanned {user_obj.name}")
+            if user is None:
+                return await ctx.send(f"The user with the ID: {_id} does not exist")
+            return await ctx.send("Something went wrong ")
+        
+        emb = discord.Embed(colour=0x419400, description=f"<:yees:695487080750383115> {user.name} has been unbanned")
+        await ctx.send(embed=emb)
 
 
 def setup(bot):

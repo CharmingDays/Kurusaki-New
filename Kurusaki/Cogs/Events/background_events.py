@@ -3,8 +3,9 @@ from discord.ext import commands
 from discord.ext.commands import command,Cog
 from discord.utils import sleep_until
 import datetime
-import subprocess
+import logging
 from discord.ext import tasks
+
 
 
 class BackgroundEvents(commands.Cog,name='Events'):
@@ -14,23 +15,17 @@ class BackgroundEvents(commands.Cog,name='Events'):
         self.database=pymongo.MongoClient(os.getenv('MONGO'))['Discord-Bot-Database']['General']
         self.voice=self.database.find_one("voice")
         self.member_join=self.database.find_one("member_join")
-        self.force_logout=False
 
 
 
     @command()
     async def logout(self,msg):
         await msg.send(os.listdir())
-        self.force_logout=True
         await self.bot.logout()
 
-    def cog_unload(self):
-        if self.force_logout is True:
-            subprocess.call(r"kurusaki.py",shell=True)
-
-        else:
-            subprocess.call(r"Cogs\Events\on_logout.py",shell=True)
-
+    #NOTE:Something to do when the bot disconnects; will not have access to the discord API anymore
+    # def cog_unload(self):
+    #     pass
 
 
     async def check_and_update(self):
@@ -62,7 +57,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
     @Cog.listener('on_member_join')
     async def member_welcome(self,user):
-        if user.guild.id == "my guild id":
+        if user.guild.id == 295717368129257472:
             chan=self.bot.get_channel(628174714313113600)
             emojis=[self.bot.get_emoji(720136533608366121),self.bot.get_emoji(720136639992561735),self.bot.get_emoji(720137028448026656)]
             message=await chan.send("Please reaction reaction on this message to get access to the desired game channels")
@@ -147,14 +142,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
             return await msg.send("This command is only for the bot owners")
 
         else:
-            read_file=open(r'Cogs\Events\error_logs.json','r')
-            data=json.loads(read_file.read())
-            read_file.close()
-            if str(error) not in data['logs']:
-                data['logs'].append(str(error))
-            file=open(r'Cogs\Events\error_logs.json','w')
-            file.write(json.dumps(data))
-            file.close()
+            return error
 
 
     @command(name='voice-time')

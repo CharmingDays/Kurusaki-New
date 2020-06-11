@@ -7,7 +7,6 @@ from discord.ext import tasks
 class MyHelpCommand(commands.MinimalHelpCommand):
 
     async def send_bot_help(self, map):
-        self.context.bot.avatar_url
         embed = discord.Embed(colour=0x7ED321, title="Useful help commands", description=f"**For a list of modules** `{self.context.prefix}modules`\n**For help with a specific command** {self.context.prefix}help <Command Name>\n**For a list of all commands in a specific module**{self.context.prefix}help <Module Name>\n\n\n[Invite Me](https://discordapp.com/oauth2/authorize?client_id=683098157877297178&scope=bot&permissions=66186303) | [Support Server](https://discord.gg/jDFrFQC)")
         embed.set_thumbnail(url=self.context.bot.user.avatar_url)
         return await self.context.send(embed=embed)

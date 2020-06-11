@@ -66,53 +66,66 @@ class Member(commands.Cog):
         return await msg.message.add_reaction(emoji="✅")
 
 
+
     @commands.has_permissions(ban_members=True)
-    @command(enabled=False)
-    async def ban(self,msg,users:commands.Greedy[discord.Member],*,reason=None):
+    @command(aliases=['banish'])
+    async def ban(self,msg,*users:discord.Member):
         """
-        Ban member(s) who are mentioned and give an optional reason at the end of the mentions.
-        `Ex:` .ban @Member1 @Member2 For breaking the rules
-        `Ex:` .ban @Member1
-        `Permissions:` Administrator or Ban Members
-        If mentioned member is not found, it'll skip it
+        Ban out the mentioned users
+        `Ex:` s.ban @User1 @User2 @User3
+        `Permissions:` Ban Members
+        `Command:` ban(users:list)
         """
-        for user in users:
-            await user.ban(reason=reason)
-        return await msg.send(f"Banned user(s) {' '.join([user.name for user in users])}")
-                              
-    @commands.has_permissions(ban_members=True)
-    @command(enabled=False)
-    async def unban(self, ctx, _id: int):
-        """
-        Unbans a member with a given ID
-        `Ex:` .unban 392839428348
-        `Permission:` Ban Members
-        """
-        user = self.bot.get_user(_id)
-        try:
-            await ctx.guild.unban(user)
-        except:
-            if user is None:
-                return await ctx.send(f"The user with the ID: {_id} does not exist")
-            return await ctx.send("Something went wrong ")
+        if not users:
+            return await msg.send("Please mention the user(s) to ban from the server")
         
-        emb = discord.Embed(colour=0x419400, description=f"<:yees:695487080750383115> {user.name} has been unbanned")
-        await ctx.send(embed=emb)
+        if users:
+            banned=[]
+            failed=[]
+            for user in users:
+                try:
+                    await msg.guild.ban(user=user)
+                    banned.append(user.name)
+                except:
+                    failed.append(user.name)
+
+            if banned:
+                await msg.send(f"Banned the following members from the server {', '.join(banned)}")
+
+            if failed:
+                await msg.send(f"Failed to ban the following members {', '.join(failed)}")
+
 
 
     @commands.has_permissions(kick_members=True)
-    @command(enabled=False)
-    async def kick(self,msg,users:commands.Greedy[discord.Member],reason=None):
+    @command(aliases=['boot'])
+    async def kick(self,msg,*users:discord.Member):
         """
-        Kick members that are mentioned and give an optional reason at the end.
-        `Ex:` .kick @Member1 @Member2
-        `Ex:` .kick @Member1 @Member2 Broke server roles
+        Kick out the mentioned users
+        `Ex:` s.kick @User1 @User2 @User3
         `Permissions:` Kick Members
+        `Command:` kick(users:list)
         """
-        for user in users:
-            await user.kick(reason=reason)
 
-        await msg.send(f"Kicked user(s) {' '.join([user.name for user in users])}")
+        if not users:
+            return await msg.send("Please enter the name of the user(s) to kick from the server or mention them.")
+
+        if users:
+            booted=[]
+            failed=[]
+            for user in users:
+                try:
+                    await msg.guild.kick(user=user)
+                    booted.append(user.name)
+                except:
+                    failed.append(user.name)
+
+            if booted:
+                await msg.send(f"Booted {', '.join(booted)}")
+
+            if failed:
+                await msg.send(f"Failed to kick the members {', '.join(failed)}")
+
 
 
     @commands.has_permissions(mute_members=True)
