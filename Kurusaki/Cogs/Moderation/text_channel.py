@@ -3,7 +3,10 @@ from discord.ext import commands
 from discord.ext.commands import command,Cog
 
 
-class TextChannel(commands.Cog):
+class Channel(commands.Cog):
+    """
+    Channel related commands for managing your voice and text channels
+    """
     def __init__(self,bot):
         self.bot=bot
 
@@ -311,6 +314,6 @@ class TextChannel(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(TextChannel(bot))
+    bot.add_cog(Channel(bot))
 
 #TODO: All the functions need additional fix

@@ -8,15 +8,17 @@ from discord.ext import commands
 
 
 class Server(commands.Cog):
+    """
+    Server related commands to easily manage your server
+    """
     def __init__(self,client):
         self.bot=client
-
 
 
     def random_color(self):
         return random.randint(1,255)
 
-
+    @commands.guild_only()
     @commands.cooldown(type=commands.BucketType.channel,rate=1,per=3)
     @command(name='server-info')
     async def guild_info(self,msg):
@@ -35,13 +37,34 @@ class Server(commands.Cog):
         emb.add_field(name="AFK Timer",value=f"{str(msg.guild.afk_timeout/60)[:4]} Minutes")
         emb.add_field(name="Owner",value=msg.guild.owner.mention)
         emb.add_field(name="Members",value=len(msg.guild.members))
-        emb.add_field(name="Text Channels",value=len(msg.guild.text_channels))
-        emb.add_field(name="Voice Channels",value=len(msg.guild.voice_channels))
-        emb.add_field(name="Categories",value=len(msg.guild.categories))
-        emb.add_field(name="Roles",value=len(msg.guild.roles))
-        emb.add_field(name=f'{len(msg.guild.emojis)} Emojis',value=emotes)
+        if msg.guild.text_channels:
+            emb.add_field(name="Text Channels",value=len(msg.guild.text_channels))
+        if not msg.guild.text_channels:
+            emb.add_field(name="Text Channels",value=None)
+        if msg.guild.voice_channels:
+            emb.add_field(name="Voice Channels",value=len(msg.guild.voice_channels))
+        
+        if not msg.guild.text_channels:
+            emb.add_field(name="Voice Channels",value=None)
+
+        if msg.guild.categories:
+            emb.add_field(name="Categories",value=len(msg.guild.categories))
+        if not msg.guild.categories:
+            emb.add_field(name="Categories",value=None)
+
+        if msg.guild.roles:
+            emb.add_field(name="Roles",value=len(msg.guild.roles))
+        if not msg.guild.roles:
+            emb.add_field(name="Roles",value=None)
+
+        if msg.guild.emojis:
+            emb.add_field(name=f'{len(msg.guild.emojis)} Emojis',value=emotes)
+        if not msg.guild.emojis:
+            emb.add_field(name=f'Emojis',value=None)
+
         await msg.send(embed=emb)
 
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @command(name='new-icon')
     async def new_icon(self,msg,*,url=None):
@@ -70,7 +93,7 @@ class Server(commands.Cog):
 
 
         
-
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @command(name='server-rename')
     async def guild_rename(self,msg,*,newName):
@@ -85,7 +108,7 @@ class Server(commands.Cog):
 
 
 
-
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @command(name='afk-chan',aliases=['afk-voice'])
     async def AFK_Channel(self,msg,*,channelName:discord.VoiceChannel):
@@ -99,7 +122,7 @@ class Server(commands.Cog):
         await msg.message.add_reaction(emoji='✅')
         return await msg.send(f"Members will now be moved to {channelName} after being AFK for 15 minutes or more.")
 
-
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @command(name='afk-timer')
     async def afk_timer(self,msg,timer:typing.Optional[int]=300):
@@ -113,7 +136,7 @@ class Server(commands.Cog):
         await msg.guild.edit(afk_timeout=timer,reason=f"AFK timer changed by {msg.author.name} ({msg.author.id})")
         return await msg.send(f"AFK timer changed to {new_time[:3]}")
 
-
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @command()
     async def invites(self,msg):
@@ -124,7 +147,7 @@ class Server(commands.Cog):
 
         return await msg.send("No current active invites found.")
     
-    
+    @commands.guild_only()    
     @commands.has_permissions(manage_roles=True)
     @command(name='create-role',aliases=['make-role','new-role'],enabled=False)
     async def create_role(self,msg,*,roleName:discord.Role):
@@ -139,7 +162,7 @@ class Server(commands.Cog):
         #TODO: make it so that it can manage permissions for the role via reactions of the role in embeds
 
 
-
+    @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @command(enabled=False)
     async def unban(self, ctx, _id: int):

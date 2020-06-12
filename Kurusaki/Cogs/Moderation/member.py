@@ -5,6 +5,9 @@ from discord.ext.commands import command
 
 
 class Member(commands.Cog):
+    """
+    Member related commands to mange them
+    """
     def __init__(self,bot):
         self.bot=bot
 

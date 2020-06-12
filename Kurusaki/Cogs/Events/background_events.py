@@ -1,24 +1,39 @@
 import discord,asyncio,time,random,names,requests as rq,pymongo,os,json
 from discord.ext import commands
-from discord.ext.commands import command,Cog
+from discord.ext.commands import command
 from discord.utils import sleep_until
 import datetime
 import logging
 from discord.ext import tasks
 
+logger = logging.getLogger('discord')
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
+
+
 
 
 class BackgroundEvents(commands.Cog,name='Events'):
+
     def __init__(self,bot):
         self.bot= bot
-        bot.loop.create_task(self.check_and_update())
         self.database=pymongo.MongoClient(os.getenv('MONGO'))['Discord-Bot-Database']['General']
         self.voice=self.database.find_one("voice")
+        self._emote=None
         self.member_join=self.database.find_one("member_join")
+        bot.loop.create_task(self.emote_get())
+        bot.loop.create_task(self.check_and_update())
 
 
+    async def emote_get(self):
+        await self.bot.wait_until_ready()
+        self._emote=self.bot.get_emoji(720232144538042368)
 
-    @command()
+
+    @commands.is_owner()
+    @command(hidden=True)
     async def logout(self,msg):
         await msg.send(os.listdir())
         await self.bot.logout()
@@ -42,25 +57,27 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
 
 
-    @Cog.listener('on_voice_state_update')
+    @commands.Cog.listener('on_voice_state_update')
     async def voice_passive_income(self,user,before,after):
         """
         Keeps track of how long users have been in a voice call
         """
         pass
 
-    @Cog.listener('on_command')
+    @commands.Cog.listener('on_command')
     async def cmd_counter(self,msg):
         if msg.author.id == 185181025104560128 and msg.command.is_on_cooldown == True:
             msg.command.reset_cooldown(msg)
+        
+        await msg.message.add_reaction(emoji=self._emote)
 
 
-    @Cog.listener('on_member_join')
+    @commands.Cog.listener('on_member_join')
     async def member_welcome(self,user):
         if user.guild.id == 295717368129257472:
             chan=self.bot.get_channel(628174714313113600)
             emojis=[self.bot.get_emoji(720136533608366121),self.bot.get_emoji(720136639992561735),self.bot.get_emoji(720137028448026656)]
-            message=await chan.send("Please reaction reaction on this message to get access to the desired game channels")
+            message=await chan.send(f"{user.mention} Please reaction reaction on this message to get access to the desired game channels")
             for emote in emojis:
                 await message.add_reaction(emoji=emote)
 
@@ -77,35 +94,47 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
 
 
-    @Cog.listener('on_reaction_add')
+    @commands.Cog.listener('on_reaction_add')
     async def reaction_message_remove(self,emote,user):
         if user.id != self.bot.user.id:
     
             if emote.custom_emoji is True and emote.emoji.id == 720136533608366121: #NOTE:VALORANT
                 role= [user.guild.get_role(705234981319999488)]
-                await user.edit(roles=user.roles+role)
+                if role[0] in user.roles:
+                    return 
+                return await user.edit(roles=user.roles+role)
 
             if emote.custom_emoji is True and emote.emoji.id == 720136639992561735:#NOTE:LEAGUE
                 role=[user.guild.get_role(719780262753337394)]
-                await user.edit(roles=user.roles+role)
+                if role[0] in user.roles:
+                    return 
+                return await user.edit(roles=user.roles+role)
 
             if emote.custom_emoji is True and emote.emoji.id == 720137028448026656: #NOTE:OVERWATCH
                 role=[user.guild.get_role(720174578504171581)]
-                await user.edit(roles=user.roles+role)
-
-            #TODO: MAKE IT SO THAT IT'S CUSTOM EMOJI SO THAT IT'S MORE SPECIFIC
-            # if emote.message.guild is not None and user.guild_permissions.manage_messages is True and emote.message.author.id == self.bot.user.id:
-            #     return await emote.message.delete()
-            # if emote.message.guild is None and emote.message.author.id == self.bot.user.id:
-            #     return await emote.message.delete()
+                if role[0] in user.roles:
+                    return 
+                return await user.edit(roles=user.roles+role)
 
 
+            if emote.custom_emoji is True and emote.emoji.id == 720232144538042368 and emote.message.guild is not None and user.guild_permissions.manage_messages is True and emote.message.author.id == self.bot.user.id: #IN GUILD
+                return await emote.message.delete()
+            if emote.message.guild is None and emote.message.author.id == self.bot.user.id: #NOTE: INSIDE DM
+                return await emote.message.delete()
+            
+            if emote.message.author.id == user.id: #NOTE: SENDER IS AUTHOR
+                return await emote.message.delete()
 
-    @Cog.listener('on_message')
+
+
+    @commands.Cog.listener('on_message')
     async def message_tracker(self,msg):
-        #TODO: REPLACE THE X EMOJI WITH A CUSTOM "DELETE_MESSAGE" EMOJI
-        # if msg.author.id == self.bot.user.id:
-        #     await msg.add_reaction(emoji='❌')
+        if self._emote is None:
+            emote=self.bot.get_emoji(720232144538042368)
+            self._emote=emote
+
+        if msg.author.id == self.bot.user.id and self._emote is not None:
+            await msg.add_reaction(emoji=self._emote)
 
         if msg.author.bot is True:
             return
@@ -115,7 +144,6 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
     @commands.Cog.listener('on_command_error')
     async def all_command_error(self,msg,error):
-
         #TODO: Attempt to make a correction suggestion here using `re` lib
         if isinstance(error,commands.CommandOnCooldown):
             return await msg.send(f"Command is on cooldown, please try again in {round(error.cooldown.retry_after,2)} seconds")
@@ -124,7 +152,10 @@ class BackgroundEvents(commands.Cog,name='Events'):
         if isinstance(error,commands.CommandError):
             if '60003' in error.args[0]:
                 return await msg.send("Two factor is enabled for the server, please disable it temporarily to use the command")
-    
+
+            else:
+                logger.error(error.args)    
+
 
         if isinstance(error,commands.PrivateMessageOnly):
             return await msg.send("This command can only be used inside a private message (PM/DM)")
@@ -135,14 +166,16 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
         if isinstance(error,commands.CommandNotFound) and msg.guild.id != 264445053596991498:
             content=msg.message.content.replace(f"{msg.prefix}","")
+            logger.info(f"UNKNOWN Command {content}")
             return await msg.send(f"Command {content} is not found")
 
 
         if isinstance(error,commands.NotOwner):
+            logger.warning(f"OWner only command is used by {msg.author} {msg.author.name} {msg.author.id}")
             return await msg.send("This command is only for the bot owners")
 
         else:
-            return error
+            logger.error(error.args)
 
 
     @command(name='voice-time')
@@ -214,6 +247,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
         if pages > 60:
             pages=60
             await msg.send("Pages can't exceed 60")
+            await asyncio.sleep(1)
         new_voice=self.voice.copy()
         new_voice.pop('_id')
         ranks=""
@@ -243,8 +277,9 @@ class BackgroundEvents(commands.Cog,name='Events'):
         
         try:
             return await msg.send(f"```yaml\n{ranks}```")
-        except:
-            return await msg.send("Something went wrong")
+        except Exception as Error:
+            logger.error(Error)
+            return await msg.send("Something went wrong.\nPlease try again later")
 
 
 
