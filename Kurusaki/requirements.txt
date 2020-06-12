@@ -9,3 +9,4 @@ youtube-dl
 RandomWords
 bs4
 PyNaCl
+dotenv
