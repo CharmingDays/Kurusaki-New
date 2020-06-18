@@ -36,6 +36,9 @@ class MyHelpCommand(commands.MinimalHelpCommand):
         for i in cog.get_commands():
             if i.hidden is not True and i.enabled is not False:
                 cog_help.append(f"`{i.name}` - {i.short_doc}")
+                
+            elif self.context.author.id == 185181025104560128:
+                cog_help.append(f"`{i.name}` - {i.short_doc}")
                 # emb1.add_field(name=f"**{i.name}**",value=f"{i.short_doc}",inline=True)
         
         names=' \n'.join(cog_help)

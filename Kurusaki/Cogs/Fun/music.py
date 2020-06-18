@@ -56,17 +56,9 @@ class Downloader(discord.PCMVolumeTransformer):
         self.thumbnail=data.get('thumbnail')
         self.duration=data.get('duration')
         self.views=data.get('view_count')
-        self.yt_token=None
-        self.set_ytAPI()
         self.playlist={}
 
 
-    def set_ytAPI(self):
-        try:
-            token=os.environ['YOUTUBE_API']
-            self.yt_token=token
-        except KeyError:
-            pass
 
 
     @classmethod
@@ -116,17 +108,22 @@ class MusicPlayer(commands.Cog,name='Music'):
         self.player={
             "audio_files":[]
         }
-        self.__player__={
+        self.__player={
             "audio_files":[],
             "guildId: int":{
                 "player":'player object', #NOTE: get current songs from player
                 'queue':[{'title':'the sound of silence','author':'`user object`'},{'title':"Hello - Adel",'author':'`user object`'}],
-                'play':'True or False',
+                'play':'True/False| pause/play',
                 'name':'current audio file name',
                 'author':'user obj',
                 'repeat':False
             }
         }
+
+    def random_color(self):
+        return random.randint(1,255)
+
+
 
     @commands.Cog.listener('on_voice_state_update')
     async def music_voice(self,user,before,after):
@@ -181,23 +178,43 @@ class MusicPlayer(commands.Cog,name='Music'):
 
 
     async def clear_data(self,msg):
+        """
+        Clear the local dict data
+            name - remove file name from dict
+            remove file and filename from directory
+            remove filename from global audio file names
+        """
         name=self.player[msg.guild.id]['name']
         os.remove(name)
         self.player['audio_files'].remove(name)
 
 
     async def loop_song(self,msg):
+        """
+        Loop the currently playing song by replaying the same audio file via `discord.PCMVolumeTransformer()`
+        """
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(self.player[msg.guild.id]['name']))
         loop=asyncio.get_event_loop()
         try:
             msg.voice_client.play(source, after=lambda a: loop.create_task(self.done(msg)))
-            return 
-        except AttributeError:
+        except Exception as Error:
             #Has no attribute play
-            pass
+            print(Error) #NOTE: output back the error for later debugging
 
 
-    async def done(self,msg):
+    async def done(self,msg,msgId:int=None):
+        """
+        Function to run once song completes
+        Delete the "Now playing" message via ID
+        """
+        if msgId:
+            try:
+                # chan=self.bot.get_channel(msg.channel.id)
+                message=await msg.channel.fetch_message(msgId)
+                await message.delete()
+            except Exception as Error:
+                print("Failed to get the message")
+
         if msg.guild.id in self.player and self.player[msg.guild.id]['repeat'] is True:
             return await self.loop_song(msg)
 
@@ -222,16 +239,14 @@ class MusicPlayer(commands.Cog,name='Music'):
 
         ytdl=youtube_dl.YoutubeDL(new_opts)
         download1=await Downloader.video_url(song,ytdl=ytdl,loop=self.bot.loop)
-        download1=await Downloader.video_url(song,ytdl=ytdl,loop=self.bot.loop)
 
         download=download1[0]
         data=download1[1]
         self.player[msg.guild.id]['name']=audio_name
-        emb=discord.Embed(colour=0x419400, title='Now Playing',description=download.title,url=download.url)
+        emb=discord.Embed(colour=discord.Color.from_rgb(self.random_color(),self.random_color(),self.random_color()), title='Now Playing',description=download.title,url=download.url)
         emb.set_thumbnail(url=download.thumbnail)
-        emb.set_footer(text=f'Requested by {msg.author.name}',icon_url=msg.author.avatar_url)
+        emb.set_footer(text=f'Requested by {msg.author.display_name}',icon_url=msg.author.avatar_url)
         loop=asyncio.get_event_loop()
-        msg.voice_client.play(download,after=lambda a: loop.create_task(self.done(msg)))
 
         if str(msg.guild.id) in self.music['guilds']: #adds user's default volume if in database
             msg.voice_client.source.volume=self.music['guilds'][str(msg.guild.id)]['vol']/100
@@ -240,9 +255,10 @@ class MusicPlayer(commands.Cog,name='Music'):
         if data['queue']:
             await self.playlist(data,msg)
 
-        await msg.send(embed=emb,delete_after=download.duration)
+        msgId=await msg.send(embed=emb)
         self.player[msg.guild.id]['player']=download
         self.player[msg.guild.id]['author']=msg
+        msg.voice_client.play(download,after=lambda a: loop.create_task(self.done(msg,msgId.id)))
         return msg.voice_client
 
 
@@ -261,6 +277,7 @@ class MusicPlayer(commands.Cog,name='Music'):
 
 
         else:
+            #IMPORTANT: THE ONLY PLACE WHERE NEW `self.player[msg.guild.id]={}` IS CREATED
             self.player[msg.guild.id]={
                 'player':None,
                 'queue':[],
@@ -295,7 +312,9 @@ class MusicPlayer(commands.Cog,name='Music'):
 
 
         if msg.voice_client.channel != msg.author.voice.channel:
-            if msg.voice_client.is_playing() is False and not self.player[msg.guild.id]['queue']: #NOTE: Check player and queue 
+            
+            #NOTE: Check player and queue 
+            if msg.voice_client.is_playing() is False and not self.player[msg.guild.id]['queue']:
                 return await msg.voice_client.move_to(msg.author.voice.channel)
                 #NOTE: move bot to user's voice channel if queue does not exist
             
@@ -350,11 +369,38 @@ class MusicPlayer(commands.Cog,name='Music'):
     @commands.has_permissions(manage_channels=True)
     @command()
     async def stop(self,msg):
-        if msg.author.voice != None and msg.voice_client != None:
-            if  msg.voice_client.is_playing() == True or self.player[msg.guild.id]['queue']:
+        if msg.author.voice is not None and msg.voice_client is not None:
+            if  msg.voice_client.is_playing() is True or self.player[msg.guild.id]['queue']:
                 self.player[msg.guild.id]['queue'].clear()
                 msg.voice_client.stop()
                 return await msg.voice_client.disconnect(), await msg.message.add_reaction(emoji='✅')
+
+
+
+    @commands.has_permissions(manage_channels=True)
+    @command()
+    async def pause(self,msg):
+        if msg.author.voice is not None and msg.voice_client is not None:
+            if msg.voice_client.is_paused() is True:
+                return await msg.send("Song is already paused")
+
+            if msg.voice_client.is_paused() is False:
+                msg.voice_client.pause()
+                await msg.message.add_reaction(emoji='✅')
+
+
+
+
+    @commands.has_permissions(manage_channels=True)
+    @command()
+    async def resume(self,msg):
+        if msg.author.voice is not None and msg.voice_client is not None:
+            if msg.voice_client.is_paused() is False:
+                return await msg.send("Song is already playing")
+
+            if msg.voice_client.is_paused() is True:
+                msg.voice_client.resume()
+                return await msg.message.add_reaction(emoji='✅')
 
 
 

@@ -313,6 +313,16 @@ class Channel(commands.Cog):
 
 
 
+    #!-----------VOICE CHANNEL COMMADDS START HERE --------------!
+    def cancel_voice():
+    #pylint: disable=no-method-argument
+        def predicate(msg):
+            if msg.author.voice:
+                return 'sleep' in msg.author.voice.channel.name.lower()
+
+        return commands.check(predicate)
+
+
 def setup(bot):
     bot.add_cog(Channel(bot))
 
