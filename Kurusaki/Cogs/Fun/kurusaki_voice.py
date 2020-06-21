@@ -1,10 +1,11 @@
-import discord,asyncio,random,pymongo,youtube_dl,string,os
+import discord,asyncio,time,datetime,names,random,pymongo,youtube_dl,string,os,functools,json
 from discord.ext import commands
 from discord.ext.commands import command
 
 
 
 #TODO: CREATE PLAYLIST SUPPORT FOR MUSIC
+
 
 
 #flat-playlist:True?
@@ -95,8 +96,8 @@ class Downloader(discord.PCMVolumeTransformer):
 class MusicPlayer(commands.Cog,name='Music'):
     def __init__(self,client):
         self.bot=client
-        self.database = pymongo.MongoClient(os.getenv('MONGO'))['Discord-Bot-Database']['General']
-        self.music=self.database.find_one('music')
+        # self.database = pymongo.MongoClient(os.getenv('MONGO'))['Discord-Bot-Database']['General'] #NOTE: YOU WILL NOT NEED THIS UNLESS YOU'RE USING MONGODB
+        # self.music=self.database.find_one('music') #NOTE: YOU WILL NOT NEED THIS UNLESS YOU'RE USING MONGODB
         self.player={
             "audio_files":[]
         }
@@ -106,19 +107,15 @@ class MusicPlayer(commands.Cog,name='Music'):
             "guildId: int":{
                 "player":'player object', #NOTE: get current songs from player
                 'queue':[{'title':'the sound of silence','author':'`user object`'},{'title':"Hello - Adel",'author':'`user object`'}],
+                'play':'True/False| pause/play',
                 'name':'current audio file name',
                 'author':'user obj',
                 'repeat':False
             }
         }
-    @property
-    def random_color(self):
-        return discord.Color.from_rgb(random.randint(1,255),random.randint(1,255),random.randint(1,255))
 
-    def cog_unload(self):
-        current=self.database.find_one('music')
-        if current != self.voice:
-            self.database.update_one({'_id':'music'},{'$set':self.music})
+    def random_color(self):
+        return random.randint(1,255)
 
 
 
@@ -128,7 +125,7 @@ class MusicPlayer(commands.Cog,name='Music'):
             try:
                 self.player[user.guild.id]['queue'].clear()
             except KeyError:
-                print(f"Failed to get guild id {user.guild.id}") #Server ID lost or was not in data before disconnecting
+                print(f"Failed to get guild id {user.guild.id}")
 
 
 
@@ -212,10 +209,6 @@ class MusicPlayer(commands.Cog,name='Music'):
             except Exception as Error:
                 print("Failed to get the message")
 
-        if self.player[msg.guild.id]['reset'] is True:
-            self.player[msg.guild.id]['reset']=False
-            return await self.loop_song(msg)
-
         if msg.guild.id in self.player and self.player[msg.guild.id]['repeat'] is True:
             return await self.loop_song(msg)
 
@@ -227,6 +220,7 @@ class MusicPlayer(commands.Cog,name='Music'):
 
 
         else:
+            self.player[msg.guild.id]['play']=False
             await self.voice_check(msg)
     
 
@@ -243,13 +237,18 @@ class MusicPlayer(commands.Cog,name='Music'):
         download=download1[0]
         data=download1[1]
         self.player[msg.guild.id]['name']=audio_name
-        emb=discord.Embed(colour=self.random_color, title='Now Playing',description=download.title,url=download.url)
+        emb=discord.Embed(colour=discord.Color.from_rgb(self.random_color(),self.random_color(),self.random_color()), title='Now Playing',description=download.title,url=download.url)
         emb.set_thumbnail(url=download.thumbnail)
         emb.set_footer(text=f'Requested by {msg.author.display_name}',icon_url=msg.author.avatar_url)
         loop=asyncio.get_event_loop()
 
 
-
+        """"
+        REMOVE IT FROM DOC STRING IF YOU KNOW HOW TO USE PYMONGODB
+        YOU WILL NEED TO CREATE SAME DATA STRUCTURE ON MONGODB IF YOU'RE USING THE SAME CODE
+        if str(msg.guild.id) in self.music['guilds']: #NOTE adds user's default volume if in database
+            msg.voice_client.source.volume=self.music['guilds'][str(msg.guild.id)]['vol']/100
+        """
 
         if data['queue']:
             await self.playlist(data,msg)
@@ -258,28 +257,20 @@ class MusicPlayer(commands.Cog,name='Music'):
         self.player[msg.guild.id]['player']=download
         self.player[msg.guild.id]['author']=msg
         msg.voice_client.play(download,after=lambda a: loop.create_task(self.done(msg,msgId.id)))
-
-        if str(msg.guild.id) in self.music: #NOTE adds user's default volume if in database
-            msg.voice_client.source.volume=self.music[str(msg.guild.id)]['vol']/100
         return msg.voice_client
 
 
 
     @command()
     async def play(self,msg,*,song):
-        """
-        Play a song with given url or title from Youtube
-        `Ex:` s.play Titanium David Guetta
-        `Command:` play(song_name)
-        """
         if msg.guild.id in self.player:
-            if msg.voice_client.is_playing() is True:#NOTE: SONG CURRENTLY PLAYING
+            if self.player[msg.guild.id]['play'] is True:
                 return await self.queue(msg,song)
 
             if self.player[msg.guild.id]['queue']:
                 return await self.queue(msg,song)
 
-            if msg.voice_client.is_playing() is False  and not self.player[msg.guild.id]['queue']:
+            if self.player[msg.guild.id]['play'] is False and not self.player[msg.guild.id]['queue']:
                 return await self.start_song(msg,song)
 
 
@@ -288,9 +279,9 @@ class MusicPlayer(commands.Cog,name='Music'):
             self.player[msg.guild.id]={
                 'player':None,
                 'queue':[],
+                'play':True,
                 'author':msg,
                 'name':None,
-                "reset":False,
                 'repeat':False
             }
             return await self.start_song(msg,song)
@@ -329,16 +320,15 @@ class MusicPlayer(commands.Cog,name='Music'):
                 #NOTE: user must join same voice channel if queue exist
                 return await msg.send("Please join the same voice channel as the bot to add song to queue")
             
-    @commands.has_permissions(manage_channels=True)
+        
     @command()
     async def repeat(self,msg):
         """
         Repeat the currently playing or turn off by using the command again
         `Ex:` .repeat
-        `Command:` repeat()
         """
         if msg.guild.id in self.player:
-            if msg.voice_client.is_playing() is True:
+            if self.player[msg.guild.id]['play'] is True:
                 if self.player[msg.guild.id]['repeat'] is True:
                     self.player[msg.guild.id]['repeat']=False
                     return await msg.message.add_reaction(emoji='✅')
@@ -350,109 +340,44 @@ class MusicPlayer(commands.Cog,name='Music'):
         return await msg.send("Bot not in voice channel or playing music")
 
 
-    @commands.has_permissions(manage_channels=True)
-    @command(aliases=['restart-loop'])
-    async def reset(self,msg):
-        """
-        Restart the currently playing song  from the begining
-        `Ex:` s.reset
-        `Command:` reset()
-        """
-        if msg.voice_client is None:
-            return await msg.send(f"**{msg.author.display_name}, there is no audio currently playing from the bot.**")
 
-        if msg.author.voice is None or msg.author.voice.channel != msg.voice_client.channel:
-            return await msg.send(f"**{msg.author.display_name}, you must be in the same voice channel as the bot.**")
-
-        if self.player[msg.guild.id]['queue'] and msg.voice_client.is_playing() is False:
-            return await msg.send("**No audio currently playing or songs in queue**".title(),delete_after=25)
-
-        self.player[msg.guild.id]['reset']=True
-        msg.voice_client.stop()
-            
-
-
-
-    @commands.has_permissions(manage_channels=True)
     @command()
     async def skip(self,msg):
-        """
-        Skip the current playing song
-        `Ex:` s.skip
-        `Command:` skip()
-        """
+        if msg.author.voice is not None:
+            if msg.author.voice.channel != msg.voice_client.channel:
+                return await msg.send("Please join the same voice channel as the bot")
+
+        if msg.author.voice is None:
+            return await msg.send("Please join the same voice channel as the bot")
+
         if msg.voice_client is None:
             return await msg.send("**No music currently playing**".title(),delete_after=60)
-
-       
-        if msg.author.voice is None or msg.author.voice.channel != msg.voice_client.channel:
-            return await msg.send("Please join the same voice channel as the bot")
         
+        else:
+            if not self.player[msg.guild.id]['queue'] and self.player[msg.guild.id]['play'] is False:
+                return await msg.send("**No songs in queue to skip**".title(),delete_after=60)
+
         
-        if self.player[msg.guild.id]['queue'] and msg.voice_client.is_playing() is False:
-            return await msg.send("**No songs in queue to skip**".title(),delete_after=60)
+        await msg.send("**Skipping song...**".title(),delete_after=20)
 
-
-        self.player[msg.guild.id]['repeat']=False
-        msg.voice_client.stop()
-        return await msg.message.add_reaction(emoji='✅')
-
+        return msg.voice_client.stop()
     
 
 
     @commands.has_permissions(manage_channels=True)
     @command()
     async def stop(self,msg):
-        """
-        Stop the current playing songs and clear the queue
-        `Ex:` s.stop
-        `Command:` stop()
-        """
-        if msg.voice_client is None:
-            return await msg.send("Bot is not connect to a voice channel")
-
-        if msg.author.voice is None:
-            return await msg.send("You must be in the same voice channel as the bot")
-
         if msg.author.voice is not None and msg.voice_client is not None:
             if  msg.voice_client.is_playing() is True or self.player[msg.guild.id]['queue']:
                 self.player[msg.guild.id]['queue'].clear()
-                self.player[msg.guild.id]['repeat']=False
-                msg.voice_client.stop()
-                return await msg.message.add_reaction(emoji='✅')
-
-            return await msg.send(f"**{msg.author.display_name}, there is no audio currently playing or songs in queue**")
-
-
-    @commands.has_permissions(manage_channels=True)
-    @command(aliases=['get-out','disconnect','leave-voice'])
-    async def leave(self,msg):
-        """
-        Disconnect the bot from the voice channel
-        `Ex:` s.leave
-        `Command:` leave()
-        """
-        if msg.author.voice is not None and msg.voice_client is not None:
-            if msg.voice_client.is_playing() is True or self.player[msg.guild.id]['queue']:
-                self.player[msg.guild.id]['queue'].clear()
                 msg.voice_client.stop()
                 return await msg.voice_client.disconnect(), await msg.message.add_reaction(emoji='✅')
-            
-            return await msg.voice_client.disconnect(), await msg.message.add_reaction(emoji='✅')
-        
-        if msg.author.voice is None:
-            return await msg.send("You must be in the same voice channel as bot to disconnect it via command")
 
 
 
     @commands.has_permissions(manage_channels=True)
     @command()
     async def pause(self,msg):
-        """
-        Pause the currently playing audio
-        `Ex:` s.pause
-        `Command:` pause()
-        """
         if msg.author.voice is not None and msg.voice_client is not None:
             if msg.voice_client.is_paused() is True:
                 return await msg.send("Song is already paused")
@@ -467,11 +392,6 @@ class MusicPlayer(commands.Cog,name='Music'):
     @commands.has_permissions(manage_channels=True)
     @command()
     async def resume(self,msg):
-        """
-        Resume the currently paused audio
-        `Ex:` s.resume
-        `Command:` resume()
-        """
         if msg.author.voice is not None and msg.voice_client is not None:
             if msg.voice_client.is_paused() is False:
                 return await msg.send("Song is already playing")
@@ -484,15 +404,10 @@ class MusicPlayer(commands.Cog,name='Music'):
 
     @command(name='queue',aliases=['song-list','q','current-songs'])
     async def _queue(self,msg):
-        """
-        Show the current songs in queue
-        `Ex:` s.queue
-        `Command:` queue()
-        """
         if msg.voice_client is not None:
             if msg.guild.id in self.player:
                 if self.player[msg.guild.id]['queue']:
-                    emb=discord.Embed(colour=self.random_color, title='queue')
+                    emb=discord.Embed(colour=discord.Color.from_rgb(self.random_color(),self.random_color(),self.random_color()), title='queue')
                     emb.set_footer(text=f'Command used by {msg.author.name}',icon_url=msg.author.avatar_url)
                     for i in self.player[msg.guild.id]['queue']:
                         emb.add_field(name=f"**{i['author'].author.name}**",value=i['title'],inline=False)
@@ -502,15 +417,10 @@ class MusicPlayer(commands.Cog,name='Music'):
 
 
 
-    @command(name='song-info',aliases=['song?','nowplaying','current-song'])
-    async def song_info(self,msg):
-        """
-        Show information about the current playing song
-        `Ex:` s.song-info
-        `Command:` song-into()
-        """
+    @command(name='current-song',aliases=['song?',''])
+    async def nowplaying(self,msg):
         if msg.voice_client is not None and msg.voice_client.is_playing() is True:
-            emb=discord.Embed(colour=self.random_color, title='Currently Playing',description=self.player[msg.guild.id]['player'].title)
+            emb=discord.Embed(colour=discord.Color.from_rgb(self.random_color(),self.random_color(),self.random_color()), title='Currently Playing',description=self.player[msg.guild.id]['player'].title)
             emb.set_footer(text=f"{self.player[msg.guild.id]['author'].author.name}",icon_url=msg.author.avatar_url)
             emb.set_thumbnail(url=self.player[msg.guild.id]['player'].thumbnail)
             return await msg.send(embed=emb,delete_after=120)
@@ -523,8 +433,8 @@ class MusicPlayer(commands.Cog,name='Music'):
     async def join(self, msg, *, channel: discord.VoiceChannel=None):
         """
         Make bot join a voice channel you are in if no channel is mentioned
-        `Ex:` .join (If voice channel name is entered, it'll join that one)
-        `Command:` join(channel:optional)
+        `Ex:` .join
+        `Ex:` .join Gen Voice
         """
         if msg.voice_client is not None:
             return await msg.send(f"Bot is already in a voice channel\nDid you mean to use {msg.prefix}moveTo")
@@ -536,7 +446,7 @@ class MusicPlayer(commands.Cog,name='Music'):
             return await channel.connect(), await msg.message.add_reaction(emoji='✅')
         
         else:
-            if msg.voice_client.is_playing() is False and not self.player[msg.guild.id]['queue']:
+            if self.player[msg.guild.id]['play'] is False and not self.player[msg.guild.id]['queue']:
                 return await msg.author.voice.channel.connect(), await msg.message.add_reaction(emoji='✅')
 
 
@@ -565,9 +475,10 @@ class MusicPlayer(commands.Cog,name='Music'):
     async def volume(self,msg,vol:int):
         """
         Change the volume of the bot
-        `Ex:` .vol 100 (200 is the max)
+        `Ex:` .vol 100
+        `Ex:` .vol 150
+        `Note:` 200 is the max
         `Permission:` manage_channels
-        `Command:` volume(amount:integer)
         """
         
         if vol > 200:
@@ -577,8 +488,6 @@ class MusicPlayer(commands.Cog,name='Music'):
             if msg.voice_client is not None:
                 if msg.voice_client.channel == msg.author.voice.channel and msg.voice_client.is_playing() is True:
                     msg.voice_client.source.volume=vol
-                    if (msg.guild.id) in self.music:
-                        self.music[str(msg.guild.id)]['vol']=vol
                     return await msg.message.add_reaction(emoji='✅')
                     
 

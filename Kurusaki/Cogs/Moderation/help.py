@@ -6,12 +6,14 @@ from discord.ext import tasks
 import random
 
 class MyHelpCommand(commands.MinimalHelpCommand):
+
+    @property
     def random_color(self):
-        return random.randint(1,255)
+        return discord.Color.from_rgb(random.randint(1,255),random.randint(1,255),random.randint(1,255))
 
 
     async def send_bot_help(self, map):
-        emb = discord.Embed(colour=discord.Color.from_rgb(self.random_color(),self.random_color(),self.random_color()), title="Help Commands", description=f"**For a list of modules** `{self.context.prefix}modules`\n**For help with a specific command** {self.context.prefix}help <Command Name>\n**For a list of all commands in a specific module** `{self.context.prefix}help` <Module Name>\n\n\n[Invite Me](https://discordapp.com/oauth2/authorize?client_id=403402614454353941&scope=bot&permissions=8) | [Support Server](https://discord.gg/XVTex62)")
+        emb = discord.Embed(colour=self.random_color, title="Help Commands", description=f"**For a list of modules** `{self.context.prefix}modules`\n**For help with a specific command** {self.context.prefix}help <Command Name>\n**For a list of all commands in a specific module** `{self.context.prefix}help` <Module Name>\n\n\n[Invite Me](https://discordapp.com/oauth2/authorize?client_id=403402614454353941&scope=bot&permissions=8) | [Support Server](https://discord.gg/XVTex62)")
         emb.set_thumbnail(url=self.context.bot.user.avatar_url)
         emb.set_footer(icon_url=self.context.guild.icon_url,text=self.context.guild.name)
         return await self.context.send(embed=emb)
@@ -20,18 +22,18 @@ class MyHelpCommand(commands.MinimalHelpCommand):
         command_doc=command.help
         aliases=f" {self.context.prefix}".join(command.aliases)
         if command.aliases:
-            emb=discord.Embed(title=f"{self.context.prefix}{command.name} **|** {self.context.prefix}{aliases}", description=f"{command_doc}",color=discord.Color.from_rgb(self.random_color(),self.random_color(),self.random_color()))
+            emb=discord.Embed(title=f"{self.context.prefix}{command.name} **|** {self.context.prefix}{aliases}", description=f"{command_doc}",color=self.random_color)
             emb.set_footer(text='Command Help')
             return await self.context.send(embed=emb)
 
 
-        emb=discord.Embed(description=f"{self.context.prefix}{command.name}\n{command_doc}",color=discord.Color.from_rgb(self.random_color(),self.random_color(),self.random_color()))
+        emb=discord.Embed(description=f"{self.context.prefix}{command.name}\n{command_doc}",color=self.random_color)
         emb.set_footer(text='Command Help')
         return await self.context.send(embed=emb)
 
     async def send_cog_help(self,cog):
         cog_help=[]
-        # emb1=discord.Embed(title=f"**{cog.qualified_name}**",color=discord.Color.from_rgb(self.random_color(),self.random_color(),self.random_color()))
+        # emb1=discord.Embed(title=f"**{cog.qualified_name}**",color=self.random_color)
         # emb1.set_thumbnail(url=self.context.guild.icon_url)
         for i in cog.get_commands():
             if i.hidden is not True and i.enabled is not False:
@@ -42,7 +44,7 @@ class MyHelpCommand(commands.MinimalHelpCommand):
                 # emb1.add_field(name=f"**{i.name}**",value=f"{i.short_doc}",inline=True)
         
         names=' \n'.join(cog_help)
-        emb=discord.Embed(title=f"**{cog.qualified_name}**",description=names,color=discord.Color.from_rgb(self.random_color(),self.random_color(),self.random_color()))
+        emb=discord.Embed(title=f"**{cog.qualified_name}**",description=names,color=self.random_color)
         emb.set_thumbnail(url=self.context.guild.icon_url)
         # await self.context.send(embed=emb1)
         return await self.context.send(embed=emb)

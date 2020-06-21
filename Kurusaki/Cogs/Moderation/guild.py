@@ -5,8 +5,8 @@ import typing
 import logging
 from discord.ext.commands import command
 from discord.ext import commands
-
-
+from discord.ext import tasks
+import datetime
 class Server(commands.Cog):
     """
     Server related commands to easily manage your server
@@ -15,8 +15,9 @@ class Server(commands.Cog):
         self.bot=client
 
 
+    @property
     def random_color(self):
-        return random.randint(1,255)
+        return discord.Color.from_rgb(random.randint(1,255),random.randint(1,255),random.randint(1,255))
 
     @commands.guild_only()
     @commands.cooldown(type=commands.BucketType.channel,rate=1,per=3)
@@ -30,9 +31,10 @@ class Server(commands.Cog):
         emotes=""
         for emote in msg.guild.emojis:
             emotes+=f"<:{emote.name}:{emote.id}>"
-        emb=discord.Embed(title=f"{msg.guild.name} - {msg.guild.id}",description=msg.guild.description,color=discord.Color.from_rgb(self.random_color(),self.random_color(),self.random_color()))
+        emb=discord.Embed(title=f"{msg.guild.name} - {msg.guild.id}",description=msg.guild.description,color=self.random_color)
         emb.set_thumbnail(url=msg.guild.icon_url)
-        emb.add_field(name="Created Date",value=f"{msg.guild.created_at} UTC")
+        date=msg.guild.created_at
+        emb.add_field(name="Created Date",value=f"{date.month}/{date.day}/{date.year} | {date.hour}:{date.minute}:{date.second} UTC")
         emb.add_field(name='AFK Channel',value=msg.guild.afk_channel)
         emb.add_field(name="AFK Timer",value=f"{str(msg.guild.afk_timeout/60)[:4]} Minutes")
         emb.add_field(name="Owner",value=msg.guild.owner.mention)
@@ -90,9 +92,19 @@ class Server(commands.Cog):
                 return await msg.send(f"New icon set to {url}")
             except Exception as Error:
                 return await msg.send("Could not use the provided image link as server icon")
-
-
+    @commands.has_any_role(487097805333331979,404374021602279436,401152167060307999,405935187210403840)
+    @command()
+    async def sinvite(self,msg):
+        return await msg.send("https://discord.gg/XVTex62\nThis message will be deleted after 30 seconds",delete_after=30)
         
+
+    @sinvite.error
+    async def sinvite_error(self,msg,error):
+        if isinstance(error,commands.CheckFailure):
+            return await msg.send("Only members with role Cultivator can use this command")
+        
+        return await msg.send("Something went wrong, please try again or ask <@!185181025104560128>")
+    
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @command(name='server-rename')
@@ -167,7 +179,7 @@ class Server(commands.Cog):
     @command(enabled=False)
     async def unban(self, ctx, _id: int):
         """
-        Unbans a member with a given ID
+        Unban a member with a given ID
         `Ex:` .unban 392839428348
         `Permission:` Ban Members
         """
@@ -179,8 +191,8 @@ class Server(commands.Cog):
                 return await ctx.send(f"The user with the ID: {_id} does not exist")
             return await ctx.send("Something went wrong ")
         
-        emb = discord.Embed(colour=0x419400, description=f"<:yees:695487080750383115> {user.name} has been unbanned")
-        await ctx.send(embed=emb)
+        emb = discord.Embed(colour=self.random_color, description=f"{user.name} has been unbanned ✅")
+        return await ctx.send(embed=emb)
 
 
 def setup(bot):

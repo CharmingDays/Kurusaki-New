@@ -1,6 +1,5 @@
 import json
-import discord,asyncio
-import os
+import discord,asyncio,os
 from discord.ext import commands
 from discord.ext.commands import Greedy
 from dotenv import load_dotenv
@@ -17,13 +16,12 @@ def get_prefix(bot, msg):
 
     return commands.when_mentioned_or(*prefixes)(bot, msg)
 
-bot = commands.Bot(command_prefix=get_prefix,description='A multipurpose discord bot',case_insensitive=True)
+bot = commands.Bot(command_prefix=get_prefix,description='A multipurpose discord bot',case_insensitive=True,owner_id=185181025104560128)
 
 
 
 @bot.event
 async def on_ready():
-
     current_active = discord.Activity(name='SING - Moonlight Thoughts', type=discord.ActivityType.watching)
     await bot.change_presence(activity=current_active)
     print(f"{bot.user.name} is ready to run!")
@@ -40,9 +38,9 @@ extensions=[
     ]
 
 
-# for ext in extensions:
-#     bot.load_extension(ext)
-#     print(ext)
+for ext in extensions:
+    bot.load_extension(ext)
+    print(ext)
 
 
 

@@ -48,7 +48,7 @@ class ServerChat(commands.Cog):
                 if chan.name == self.channel_name:
                     await chan.delete()
                     return await msg.send(f"Turned off server chat for `{msg.guild.name}`")
-            return await msg.send(f"No server chat channel found inside P{msg.guild.name}")
+            return await msg.send(f"No server chat channel found inside {msg.guild.name}")
 
         if mode.lower() == 'on':
             for chan in msg.guild.text_channels:

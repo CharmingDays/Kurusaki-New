@@ -17,7 +17,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
         self.michelley=287369884940238849
         self.special_invite="XVTex62"
         self.invite_uses=0
-        self.jia_yi.start()
+        # self.background_looper.start()
         bot.loop.create_task(self.background_functions())
 
 
@@ -36,42 +36,20 @@ class BackgroundEvents(commands.Cog,name='Events'):
         return r
 
 
-    #NOTE:Something to do when the bot disconnects; will not have access to the discord API anymore
     def cog_unload(self):
-        self.jia_yi.cancel()
+        current=self.database.find_one('voice')
+        if current != self.voice:
+            self.database.update_one({'_id':'voice'},{'$set':self.voice})
 
 
-    @tasks.loop(hours=1)
-    async def jia_yi(self):
-        #NOTE: wait until bot is ready for cache
-        await self.bot.wait_until_ready()
-        now=datetime.datetime.utcnow() - datetime.timedelta(hours=4)
-        if self.days['day'] < now.day:
-            self.days['day'] = now.day
 
-        if now.hour in [7,8,9,10,11] and self.days['morning'] is False:
-            user=self.bot.get_user(self.michelley)
-            self.days['morning']=True
-            self.days['night']=False
-            await user.send(random.choice(self.jia_greetings['morning']))
 
-        if now.hour in [12,13,14,15,16] and self.days['afternoon'] is False:
-            user=self.bot.get_user(self.michelley)
-            await user.send(random.choice(self.jia_greetings['afternoon']))
-            self.days['afternoon']=True
-            self.days['morning']=False
+    # @tasks.loop(hours=1)
+    # async def background_looper(self):
+    #     """
+    #     Background event function for Zheng Jia Yi's greetings
+    #     """
 
-        if now.hour in [17,18,19,20] and self.days['evening']:
-            user=self.bot.get_user(self.michelley)
-            await user.send(random.choice(self.jia_greetings['evening']))
-            self.days['evening']=True
-            self.days['afternoon']=False
-
-        if now.hour in [22,23,24] and self.days['night'] is False:
-            user=self.bot.get_user(self.michelley)
-            await user.send(random.choice(self.jia_greetings['night']))
-            self.days['night']=True
-            self.days['evening']=False
 
     async def background_functions(self):
         self.bot.loop.create_task(self.check_and_update())
@@ -172,7 +150,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
                     if reply == '#love':
                         not_yukinno=[f"Sorry {msg.author.name}, but I'm already taken by someone","I'm already taken \:)",f"Sorry, I'm already taken {msg.author.name}"]
                         is_yukinno=['❤','<3','I ❤ you',f'I love you {msg.author.display_name}',f'My love is only for you {msg.author.name}']
-                        if msg.author.id == 287369884940238849:
+                        if msg.author.id == self.michelley:
                             return await msg.channel.send(random.choice(is_yukinno))
                         else:
                             return await msg.channel.send(random.choice(not_yukinno))
@@ -207,8 +185,6 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
 
         if isinstance(error,commands.CommandNotFound) and msg.guild.id != 264445053596991498:
-            if msg.guild.id == 295717368129257472:
-                return None
             content=msg.message.content.replace(f"{msg.prefix}","")
             return await msg.send(f"Command {content} is not found")
 

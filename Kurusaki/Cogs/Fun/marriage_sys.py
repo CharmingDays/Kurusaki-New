@@ -1,8 +1,8 @@
 import discord,asyncio,time,datetime,pymongo,os,string,random, requests as rq,io
 from discord.ext import commands
 from discord.ext.commands import Cog,command
+from discord.ext import tasks
 from PIL import Image
-
 
 
 
@@ -12,9 +12,20 @@ class Marriage(Cog):
         self.database=pymongo.MongoClient(os.getenv('MONGO'))['Discord-Bot-Database']['General']
         self.marriage=self.database.find_one('marriage')
         self.proposal_codes={}
+        self.clear_codes.start()
 
 
-    async def gen_code(self):
+
+    @tasks.loop(hours=1)
+    async def clear_codes(self):
+        for code in self.proposal_codes.copy():
+            if time.time() >= self.proposal_codes[code]['time']:
+                self.proposal_codes.pop(code)
+            
+
+
+
+    async def gen_code(self,author,user):
         code=""
         loops=0
         _range=10
@@ -25,60 +36,66 @@ class Marriage(Cog):
 
             if code not in self.proposal_codes:
                 break
-        self.proposal_codes[code]={'time':time.time()+86400}
+        self.proposal_codes[code]={'time':time.time()+172800,"author":author,"user":"user"}
         return code
 
 
-    async def clear_codes(self):
-        while True:
-            for code in self.proposal_codes.copy():
-                if time.time() >= self.proposal_codes[code]['time']:
-                    self.proposal_codes.pop(code)
-            await asyncio.sleep(320)
-
-
+    async def proposal_emb(self,msg,user,code):
+        emb=discord.Embed(title='Proposal',description=f"{user.mention}, {msg.author.mention} has proposed you for a virtual marriage")
+        emb.add_field(name='Accept',value=f'Type in {msg.prefix}accept {code}')
+        emb.add_field(name='Reject',value=f'Type in {msg.prefix}reject {code}')
+        emb.set_footer(text="The proposal will expire in 48 hours and a new one will need to be created",icon_url=msg.guild.icon_url)
+        return emb
 
 
     @command()
-    async def propose(self,msg,user:discord.Member,*,message=None):
+    async def propose(self,msg,user:discord.Member):
+        """
+        Propose a virtual marriage to the mentioned user
+        `Ex:` s.propose @User
+        `
+        """
+        if str(msg.author.id) in self.marriage:
+            partner=self.bot.get_user(self.marriage[str(msg.author.id)]["couple"])
+            if partner:
+                return await msg.send(f"You are already married to {partner}")
+            
+            return await msg.send(f"You are already married")
+
         if str(user.id) in self.marriage:
-            return await msg.send("You are already married")
+            partner=self.bot.get_user(self.marriage[str(user.id)]["couple"])
+            return await msg.send(f"{user.name} is already married to {partner.name}")
+
+        if user.id in self.marriage['no_marriage']:
+            return await msg.send(f"{user.name} does not want to marry anyone at the moment")
         
-        if str(user.id) in self.marriage:
-            return await msg.send(f"{user.name} is already married")
+        code=await self.gen_code(msg.author.id,user.id)
+        self.marriage_codes[code]
+        message=await self.proposal_emb(msg,user,code)
+        return await msg.send(embed=message)
 
-        if str(user.id) in self.marriage['no_marriage']:
-            return await msg.send(f"User {user.name} isn't seeking for anyone at the moment")
-
-        code=await self.gen_code()
-        self.proposal_codes[code]['user']=user.id
-        emb=discord.Embed(description=f"{msg.author.mention} has proposed to you\nPlease use the code {code} to accept or decline with the command.\n`Ex:`\ns.decline {code}\ns.accept {code}")
-        emb.set_thumbnail(url=msg.author.avatar_url)
-        if message is not None:
-            emb.set_footer(text=message)
-        #TODO:Complete
-        return await msg.send(embed=emb)
-    
     @propose.error
-    async def propose_error(self,msg,error):
-        if isinstance(error,commands.MissingRequiredArgument):
-            return await msg.send("Please mention a user or enter their name to propose")
-   
-   
-   
+    async def propose_error(self,msg):
+        pass
+
+
+
+    async def accept_emb(self,msg,code):
+        author=self.bot.get_user(self.proposal_codes[code]['author'])
+        emb=discord.Embed(title=f"Congratulations",description=f"Congratulations to {msg.author.mention} {author.mention} for becoming a new couple!")
+        emb.set_thumbnail(url="") #NOTE: picture of both author and user
+        return emb
+
+    
     @command()
-    async def accept(self,msg,*,code):
-        if code not in self.proposal_codes:
-            return await msg.send(f"Proposal code {code} is not found\nPlease check the case-sensitivity and characters")
-        #TODO: COMPLETE
+    async def accept(self,msg,code):
+        #NOTE: check to see if the person is already married from previous other proposals
+        if code in self.proposal_codes and msg.author.id in self.proposal_codes[code]["user"]:
+            emb=await self.accept_emb(msg,code)
+            self.proposal_codes.pop(code)
+            return await msg.send(embed=emb)
 
-
-    @command(aliases=['reject'])
-    async def decline(self,msg,*,code:str):
-        if code not in self.proposal_codes:
-            return await msg.send(f"Proposal code {code} is not found\nPlease check the case-sensitivity and characters")
-
-        #TODO: complete
+        return await msg.send("Sorry, the accept code doesn't exist\nPlease check your spelling and case sensitivity")
 
 
     async def make_image(self,msg,user):
@@ -101,3 +118,5 @@ class Marriage(Cog):
 
 def setup(bot):
     bot.add_cog(Marriage(bot))
+
+
