@@ -1,4 +1,9 @@
-import discord,asyncio,time,datetime,pymongo,names,typing,os
+import discord, asyncio
+import time, datetime
+import pymongo, names
+import typing, os ,random
+
+
 from discord.ext import commands
 from discord.ext.commands import command
 
@@ -10,6 +15,25 @@ class Member(commands.Cog):
     """
     def __init__(self,bot):
         self.bot=bot
+
+    @property
+    def random_color(self):
+        return discord.Color.from_rgb(random.randint(1,255),random.randint(1,255),random.randint(1,255))
+
+
+    @command(name='user-info')
+    async def user_info(self,msg,user:discord.Member):
+        emb=discord.Embed(title=f"{user} - {user.id}",color=self.random_color)
+        date=user.joined_at
+        ac_date=user.created_at
+        emb.set_thumbnail(url=user.avatar_url)
+        emb.add_field(name='Created At',value=f"{ac_date.month}/{ac_date.day}/{ac_date.year} - {ac_date.hour}:{ac_date.minute}")
+        emb.add_field(name='Joined Date',value=f"{date.month}/{date.day}/{date.year} - {date.hour}:{date.minute} UTC")
+        emb.add_field(name="Rop Role",value=user.top_role)
+        emb.add_field(name='Roles',value=", ".join([role.name for role in user.roles]))
+        emb.add_field(name="Status",value=user.status,inline=False)
+        return await msg.send(embed=emb)
+
 
 
     @commands.has_permissions(manage_roles=True)
@@ -36,6 +60,7 @@ class Member(commands.Cog):
             #No members mentioned
             await msg.author.edit(roles=msg.author.roles+roles)
         return await msg.message.add_reaction(emoji='✅')
+
 
 
     @commands.has_permissions(manage_roles=True)
@@ -65,8 +90,8 @@ class Member(commands.Cog):
                 if role.id not in remove_roles:
                     new_roles.append(role)
             await msg.author.edit(roles=new_roles)
-
         return await msg.message.add_reaction(emoji="✅")
+
 
 
 

@@ -21,8 +21,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
         bot.loop.create_task(self.background_functions())
 
 
-    @staticmethod
-    async def chat_bot(query):
+    async def chat_bot(self,query):
         """
         Request query to the api.ai for chat bot
         """
@@ -85,14 +84,9 @@ class BackgroundEvents(commands.Cog,name='Events'):
         if user.guild.id in [295717368129257472]:
             code=[invite for invite in await user.guild.invites() if invite.code == self.special_invite][0]
             if code.uses > self.invite_uses:
-                role=[user.guild.get_role(578750959367225375)]
+                role=[user.guild.get_role(487097805333331979)]
                 await user.edit(roles=user.roles+role)
                 self.invite_uses=code.uses
-            # chan=self.bot.get_channel(628174714313113600) #NOTE: Disboard channel
-            # emojis=[self.bot.get_emoji(720136533608366121),self.bot.get_emoji(720136639992561735),self.bot.get_emoji(720137028448026656)]
-            # message=await chan.send(f"{user.mention} Please reaction reaction on this message to get access to the desired game channels")
-            # for emote in emojis:
-            #     await message.add_reaction(emoji=emote)
 
         if str(user.guild.id) in self.member_join:
             chan=self.bot.get_channel(self.member_join[str(user.guild.id)]['greetings'])
@@ -143,7 +137,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
         if msg.guild.id in [251397504879296522,295717368129257472]:
             if f"<@!{self.bot.user.id}>" in msg.content:
-                content=msg.content.replace('<@!403402614454353941> ','')
+                content=msg.content.replace(f'<@!{self.bot.user.id}> ','')
                 data=await self.chat_bot(content)
                 if data.ok:
                     reply=data.json()['result']['fulfillment']['speech']
@@ -167,8 +161,8 @@ class BackgroundEvents(commands.Cog,name='Events'):
         #TODO: Attempt to make a correction suggestion here using `re` lib
         if isinstance(error,commands.CommandOnCooldown):
             return await msg.send(f"Command is on cooldown, please try again in {round(error.cooldown.retry_after,2)} seconds")
-        
 
+    
         if isinstance(error,commands.CommandError):
             if '60003' in error.args[0]:
                 return await msg.send("Two factor is enabled for the server, please disable it temporarily to use the command")
@@ -176,15 +170,14 @@ class BackgroundEvents(commands.Cog,name='Events'):
             else:
                 return error
 
-
         if isinstance(error,commands.PrivateMessageOnly):
             return await msg.send("This command can only be used inside a private message (PM/DM)")
 
-        if isinstance(error,commands.NoPrivateMessage):
+        if error is commands.NoPrivateMessage:
             return await msg.send("Command unable to run inside a private message (PM/DM")
 
 
-        if isinstance(error,commands.CommandNotFound) and msg.guild.id != 264445053596991498:
+        if isinstance(error,commands.CommandNotFound) and msg.guild is not None and msg.guild.id != 264445053596991498:
             content=msg.message.content.replace(f"{msg.prefix}","")
             return await msg.send(f"Command {content} is not found")
 
@@ -192,7 +185,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
         if isinstance(error,commands.NotOwner):
             return await msg.send("This command is only for the bot owners")
 
-        return error
+        print(error)
 
 
     @command(name='voice-time')

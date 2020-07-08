@@ -45,7 +45,7 @@ class Server(commands.Cog):
             emb.add_field(name="Text Channels",value=None)
         if msg.guild.voice_channels:
             emb.add_field(name="Voice Channels",value=len(msg.guild.voice_channels))
-        
+
         if not msg.guild.text_channels:
             emb.add_field(name="Voice Channels",value=None)
 
@@ -96,6 +96,11 @@ class Server(commands.Cog):
     @command()
     async def sinvite(self,msg):
         return await msg.send("https://discord.gg/XVTex62\nThis message will be deleted after 30 seconds",delete_after=30)
+        await asyncio.sleep(30)
+        try:
+            await msg.message.delete()
+        except Exception as Error:
+            print(Error)
         
 
     @sinvite.error

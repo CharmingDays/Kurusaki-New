@@ -276,7 +276,7 @@ class Channel(commands.Cog):
 
 
     @commands.has_guild_permissions(create_instant_invite=True)
-    @command(name='create-invite',aliases=['make-inv','create-inv','invite'])
+    @command(name='create-invite',aliases=['make-inv','create-inv'])
     async def create_invite(self,msg,mode='temp'):
         """
         Create an invite link for the current channel

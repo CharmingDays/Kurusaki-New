@@ -20,7 +20,6 @@ ytdl_format_options= {
     'ignoreerrors': True,
     'logtostderr': False,
     "extractaudio":True,
-
     "audioformat":"opus",
     'quiet': True,
     'no_warnings': True,
@@ -43,7 +42,8 @@ stim= {
 
 
 ffmpeg_options = {
-    'options': '-vn'
+    'options': '-vn',
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
 }
 
 class Downloader(discord.PCMVolumeTransformer):
@@ -108,7 +108,8 @@ class MusicPlayer(commands.Cog,name='Music'):
                 'queue':[{'title':'the sound of silence','author':'`user object`'},{'title':"Hello - Adel",'author':'`user object`'}],
                 'name':'current audio file name',
                 'author':'user obj',
-                'repeat':False
+                'repeat':False,
+                "vol":int
             }
         }
     @property
@@ -194,6 +195,8 @@ class MusicPlayer(commands.Cog,name='Music'):
         loop=asyncio.get_event_loop()
         try:
             msg.voice_client.play(source, after=lambda a: loop.create_task(self.done(msg)))
+            if str(msg.guild.id) in self.music:
+                msg.voice_client.source.volume=self.music['vol']/100
         except Exception as Error:
             #Has no attribute play
             print(Error) #NOTE: output back the error for later debugging
@@ -581,10 +584,10 @@ class MusicPlayer(commands.Cog,name='Music'):
                         self.music[str(msg.guild.id)]['vol']=vol
                     return await msg.message.add_reaction(emoji='✅')
                     
-
-
         
         return await msg.send("**Please join the same voice channel as the bot to use the command**".title(),delete_after=30)
+    
+
     
     @volume.error
     async def volume_error(self,msg,error):

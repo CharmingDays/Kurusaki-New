@@ -14,8 +14,12 @@ class Utility(commands.Cog):
     @command()
     async def timer(self,msg,hours,minutes,seconds):
         when=datetime.datetime.utcnow() + datetime.timedelta(hours=hours,minutes=minutes,seconds=seconds)
-        msg1=await msg.send("Timmer complete")
-        sleep_until(when,msg1)
+        timer_done=await msg.send("Timmer complete")
+        sleep_until(when,timer_done)
+
+    @command()
+    async def ping(self,msg):
+        return await msg.send(f"Pong! 🏓 {round(self.bot.latency,3)}")
 
 
 

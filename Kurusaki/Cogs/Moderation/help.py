@@ -13,7 +13,7 @@ class MyHelpCommand(commands.MinimalHelpCommand):
 
 
     async def send_bot_help(self, map):
-        emb = discord.Embed(colour=self.random_color, title="Help Commands", description=f"**For a list of modules** `{self.context.prefix}modules`\n**For help with a specific command** {self.context.prefix}help <Command Name>\n**For a list of all commands in a specific module** `{self.context.prefix}help` <Module Name>\n\n\n[Invite Me](https://discordapp.com/oauth2/authorize?client_id=403402614454353941&scope=bot&permissions=8) | [Support Server](https://discord.gg/XVTex62)")
+        emb = discord.Embed(colour=self.random_color, title="Help Commands", description=f"**For a list of command containers** `{self.context.prefix}cogs`\n**For help with a specific command** {self.context.prefix}help `Command Name`\n**For a list of all commands in a specific container** `{self.context.prefix}help` **Container Name**\n\n\n[Invite Bot](https://discordapp.com/oauth2/authorize?client_id=403402614454353941&scope=bot&permissions=8) | [Bot Server](https://discord.gg/xXf8pFr)")
         emb.set_thumbnail(url=self.context.bot.user.avatar_url)
         emb.set_footer(icon_url=self.context.guild.icon_url,text=self.context.guild.name)
         return await self.context.send(embed=emb)
@@ -64,8 +64,8 @@ class Help(commands.Cog):
         bot.help_command.cog = self
 
 
-    @command()
-    async def modules(self,msg):
+    @command(name='cogs')
+    async def _cogs(self,msg):
         """
         Shows the list od modules the bot has
         `Ex:` s.modules
