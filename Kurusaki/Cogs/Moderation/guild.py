@@ -92,15 +92,16 @@ class Server(commands.Cog):
                 return await msg.send(f"New icon set to {url}")
             except Exception as Error:
                 return await msg.send("Could not use the provided image link as server icon")
+
     @commands.has_any_role(487097805333331979,404374021602279436,401152167060307999,405935187210403840)
     @command()
     async def sinvite(self,msg):
+        """
+        Invite a member into the server with fixed/given role Cultivator
+        `Ex:` s.sinvite
+        `Command:` sinvite()
+        """
         return await msg.send("https://discord.gg/XVTex62\nThis message will be deleted after 30 seconds",delete_after=30)
-        await asyncio.sleep(30)
-        try:
-            await msg.message.delete()
-        except Exception as Error:
-            print(Error)
         
 
     @sinvite.error
@@ -191,7 +192,7 @@ class Server(commands.Cog):
         user = self.bot.get_user(_id)
         try:
             await ctx.guild.unban(user)
-        except:
+        except Exception:
             if user is None:
                 return await ctx.send(f"The user with the ID: {_id} does not exist")
             return await ctx.send("Something went wrong ")

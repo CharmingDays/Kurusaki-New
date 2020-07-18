@@ -9,4 +9,4 @@ youtube-dl
 RandomWords
 bs4
 PyNaCl
-python-dotenv
+lavalink

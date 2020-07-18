@@ -8,8 +8,6 @@ from discord.ext.commands import command
 
 
 #flat-playlist:True?
-#|
-#|
 #extract_flat:True
 ytdl_format_options= {
     'format': 'bestaudio/best',
@@ -43,7 +41,7 @@ stim= {
 
 ffmpeg_options = {
     'options': '-vn',
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
+    # 'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
 }
 
 class Downloader(discord.PCMVolumeTransformer):
@@ -100,18 +98,7 @@ class MusicPlayer(commands.Cog,name='Music'):
         self.player={
             "audio_files":[]
         }
-        #NOTE: AN EXAMPLE OF HOW THE `self.player` DICT IS GOING TO LOOK LIKE
-        self.__player={
-            "audio_files":[],
-            "guildId: int":{
-                "player":'player object', #NOTE: get current songs from player
-                'queue':[{'title':'the sound of silence','author':'`user object`'},{'title':"Hello - Adel",'author':'`user object`'}],
-                'name':'current audio file name',
-                'author':'user obj',
-                'repeat':False,
-                "vol":int
-            }
-        }
+
     @property
     def random_color(self):
         return discord.Color.from_rgb(random.randint(1,255),random.randint(1,255),random.randint(1,255))
@@ -209,7 +196,6 @@ class MusicPlayer(commands.Cog,name='Music'):
         """
         if msgId:
             try:
-                # chan=self.bot.get_channel(msg.channel.id)
                 message=await msg.channel.fetch_message(msgId)
                 await message.delete()
             except Exception as Error:
@@ -554,9 +540,6 @@ class MusicPlayer(commands.Cog,name='Music'):
     async def join_error(self,msg,error):
         if isinstance(error,commands.BadArgument):
             return msg.send(error)
-
-        # if error.args[0] == 'Command raised an exception: Exception: queue':
-        #     return await msg.send("**Please join the same voice channel as the bot to add song to queue**".title())
 
         if error.args[0] == 'Command raised an exception: Exception: playing':
             return await msg.send("**Please join the same voice channel as the bot to add song to queue**".title())

@@ -23,7 +23,7 @@ class MyHelpCommand(commands.MinimalHelpCommand):
         aliases=f" {self.context.prefix}".join(command.aliases)
         if command.aliases:
             emb=discord.Embed(title=f"{self.context.prefix}{command.name} **|** {self.context.prefix}{aliases}", description=f"{command_doc}",color=self.random_color)
-            emb.set_footer(text='Command Help')
+            emb.set_footer(text='Help Menu')
             return await self.context.send(embed=emb)
 
 
@@ -32,21 +32,28 @@ class MyHelpCommand(commands.MinimalHelpCommand):
         return await self.context.send(embed=emb)
 
     async def send_cog_help(self,cog):
+        if hasattr(self.bot,'_internal_use') is False:
+            setattr(self.bot,'_internal_use',{})
         cog_help=[]
-        # emb1=discord.Embed(title=f"**{cog.qualified_name}**",color=self.random_color)
-        # emb1.set_thumbnail(url=self.context.guild.icon_url)
         for i in cog.get_commands():
             if i.hidden is not True and i.enabled is not False:
                 cog_help.append(f"`{i.name}` - {i.short_doc}")
                 
-            elif self.context.author.id == 185181025104560128:
+            if self.context.author.id == 185181025104560128:
                 cog_help.append(f"`{i.name}` - {i.short_doc}")
-                # emb1.add_field(name=f"**{i.name}**",value=f"{i.short_doc}",inline=True)
+
+        # if self._internal_use:
+        #     for key,value in self._internal_use.items():
+        #         if key == cog.qualified_name:
+        #             for index,x in enumerate(value):
+        #                 cog_help.append(f"{x[index]['name']} - {x[index]['short doc']}")
+
+
         
         names=' \n'.join(cog_help)
         emb=discord.Embed(title=f"**{cog.qualified_name}**",description=names,color=self.random_color)
         emb.set_thumbnail(url=self.context.guild.icon_url)
-        # await self.context.send(embed=emb1)
+        emb.set_footer(text='Cog Menu')
         return await self.context.send(embed=emb)
 
 
