@@ -91,6 +91,9 @@ class Downloader(discord.PCMVolumeTransformer):
 
 
 class MusicPlayer(commands.Cog,name='Music'):
+    """
+    A list of commands to control the bot's audio streaming features
+    """
     def __init__(self,client):
         self.bot=client
         self.database = pymongo.MongoClient(os.getenv('MONGO'))['Discord-Bot-Database']['General']
@@ -146,7 +149,8 @@ class MusicPlayer(commands.Cog,name='Music'):
         #NOTE:needs fix here
         if data['queue']:
             await self.playlist(data,msg)
-            return await msg.send(f"Added playlist {data['title']} to queue") #NOTE: needs to be embeded to make it better output
+            #NOTE: needs to be embeded to make it better output
+            return await msg.send(f"Added playlist {data['title']} to queue")
         self.player[msg.guild.id]['queue'].append({'title':title,'author':msg})
         return await msg.send(f"**{title} added to queue**".title())
 
@@ -198,7 +202,7 @@ class MusicPlayer(commands.Cog,name='Music'):
             try:
                 message=await msg.channel.fetch_message(msgId)
                 await message.delete()
-            except Exception as Error:
+            except Exception:
                 print("Failed to get the message")
 
         if self.player[msg.guild.id]['reset'] is True:
@@ -279,7 +283,7 @@ class MusicPlayer(commands.Cog,name='Music'):
                 'queue':[],
                 'author':msg,
                 'name':None,
-                "reset":False,
+                "reset":False, #FOR RESTARTING THE AUDIO FROM BEGINING
                 'repeat':False
             }
             return await self.start_song(msg,song)
@@ -357,6 +361,7 @@ class MusicPlayer(commands.Cog,name='Music'):
             return await msg.send("**No audio currently playing or songs in queue**".title(),delete_after=25)
 
         self.player[msg.guild.id]['reset']=True
+        #NOTE: LET THE DONE FUNCTION KNOW THAT IT'S BEING RESETED WHEN AUDIO STOPS PLAYING
         msg.voice_client.stop()
             
 

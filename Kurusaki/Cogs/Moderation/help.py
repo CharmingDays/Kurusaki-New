@@ -13,7 +13,7 @@ class MyHelpCommand(commands.MinimalHelpCommand):
 
 
     async def send_bot_help(self, map):
-        emb = discord.Embed(colour=self.random_color, title="Help Commands", description=f"**For a list of command containers** `{self.context.prefix}cogs`\n**For help with a specific command** {self.context.prefix}help `Command Name`\n**For a list of all commands in a specific container** `{self.context.prefix}help` **Container Name**\n\n\n[Invite Bot](https://discordapp.com/oauth2/authorize?client_id=403402614454353941&scope=bot&permissions=8) | [Bot Server](https://discord.gg/xXf8pFr)")
+        emb = discord.Embed(colour=self.random_color, title="Help Commands", description=f"**For a list of command categories** `{self.context.prefix}categories`\n**For help with a specific command** {self.context.prefix}help `Command Name`\n**For a list of all commands in a specific categories** `{self.context.prefix}help` **Categories Name**\n\n\n[Invite Bot](https://discordapp.com/oauth2/authorize?client_id=403402614454353941&scope=bot&permissions=8) | [Bot Server](https://discord.gg/xXf8pFr)")
         emb.set_thumbnail(url=self.context.bot.user.avatar_url)
         emb.set_footer(icon_url=self.context.guild.icon_url,text=self.context.guild.name)
         return await self.context.send(embed=emb)
@@ -32,24 +32,14 @@ class MyHelpCommand(commands.MinimalHelpCommand):
         return await self.context.send(embed=emb)
 
     async def send_cog_help(self,cog):
-        if hasattr(self.bot,'_internal_use') is False:
-            setattr(self.bot,'_internal_use',{})
         cog_help=[]
         for i in cog.get_commands():
-            if i.hidden is not True and i.enabled is not False:
-                cog_help.append(f"`{i.name}` - {i.short_doc}")
-                
-            if self.context.author.id == 185181025104560128:
-                cog_help.append(f"`{i.name}` - {i.short_doc}")
+            if i.enabled is True:
+                if i.hidden is True and self.context.author.id == 185181025104560128:
+                    cog_help.append(f"`{i.name}` - {i.short_doc}")
+                if i.hidden is False:
+                    cog_help.append(f"`{i.name}` - {i.short_doc}")
 
-        # if self._internal_use:
-        #     for key,value in self._internal_use.items():
-        #         if key == cog.qualified_name:
-        #             for index,x in enumerate(value):
-        #                 cog_help.append(f"{x[index]['name']} - {x[index]['short doc']}")
-
-
-        
         names=' \n'.join(cog_help)
         emb=discord.Embed(title=f"**{cog.qualified_name}**",description=names,color=self.random_color)
         emb.set_thumbnail(url=self.context.guild.icon_url)
@@ -71,12 +61,19 @@ class Help(commands.Cog):
         bot.help_command.cog = self
 
 
-    @command(name='cogs')
-    async def _cogs(self,msg):
+    @property
+    def random_color(self):
+        return discord.Color.from_rgb(random.randint(1,255),random.randint(1,255),random.randint(1,255))
+
+
+
+
+    @command()
+    async def categories(self,msg):
         """
-        Shows the list od modules the bot has
+        Shows the list of cogs the bot has
         `Ex:` s.modules
-        `Command:` modules()
+        `Command:` cogs()
         """
 
         cogs=""
@@ -91,7 +88,7 @@ class Help(commands.Cog):
             else:
                 cogs+=f"`{cog}` - {cog_dict[cog].description}\n"
         
-        emb=discord.Embed(description=f"**{self.bot.user.name}'s Modules**\n{cogs}")
+        emb=discord.Embed(description=f"**{self.bot.user.name}'s Command Categories**\n{cogs}",color=self.random_color)
         return await msg.send(embed=emb)
 
 

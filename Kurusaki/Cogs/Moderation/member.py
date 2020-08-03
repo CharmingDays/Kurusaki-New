@@ -214,7 +214,7 @@ class Member(commands.Cog):
 
 
     @commands.has_permissions(move_members=True)
-    @command(aliases=['move-to'],enabled=False,hidden=True)
+    @command(aliases=['move-to'],enabled=True,hidden=True)
     async def moveTo(self,msg,users:commands.Greedy[discord.Member],chan:discord.VoiceChannel):
         #TODO: Check if mentioned members are in voice channel first
         """

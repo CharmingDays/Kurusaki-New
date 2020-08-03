@@ -21,7 +21,7 @@ def get_prefix(bot, msg):
 bot = commands.Bot(command_prefix=get_prefix,description='A multipurpose discord bot',case_insensitive=True,owner_id=185181025104560128)
 
 
-loop_minutes=[5]
+
 listening=discord.ActivityType.listening
 watching=discord.ActivityType.watching
 playing=discord.ActivityType.playing
@@ -31,13 +31,22 @@ bot_statuses=[('SING - Moonlight Thoughts','Twice - Likey',listening),
 ('T-ara - Holiday',listening),('League of Legends',playing),('Valorant',playing),
 ('Overwatch',playing),('Silent Hill',watching),('Dexter',watching),('Supernatural',watching),
 ('Yanxi Palace',watching)]
-@tasks.loop(minutes=loop_minutes[0])
+
+
+async def change_interval():
+    timer=random.randint(20,360)
+    status_changer.change_interval(seconds=timer)
+
+
+
+@tasks.loop(minutes=random.randint(20,360))
 async def status_changer():
-    new_minutes=random.randint(20,360)
     random_status=random.choice(bot_statuses)
     current_active = discord.Activity(name=random_status[0], type=random_status[1])
     await bot.change_presence(activity=current_active)
-    loop_minutes[0]=new_minutes
+    await change_interval()
+
+
 
 
 
@@ -47,12 +56,11 @@ async def on_ready():
     print(f"{bot.user.name} is ready to run!")
 
 
+
+
 @bot.event
 async def on_disconnect():
-    #NOTE: Stopping the status changer to avoid errors when the bot is disconnected
     status_changer.stop()
-
-
 
 
 
@@ -71,6 +79,5 @@ for ext in extensions:
     bot.load_extension(ext)
     print("Loaded",ext)
 
-bot.load_extension('Cogs.Fun.music')
 
 bot.run(os.getenv('TOKEN'),reconnect=True)

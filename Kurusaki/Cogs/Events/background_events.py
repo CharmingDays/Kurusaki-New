@@ -11,12 +11,14 @@ class BackgroundEvents(commands.Cog,name='Events'):
         self.bot= bot
         self.database=pymongo.MongoClient(os.getenv('MONGO'))['Discord-Bot-Database']['General']
         self.voice=self.database.find_one("voice")
-        self.days={"morning":False,"afternoon":False,"evening":False,"night":False,"day":datetime.datetime.now().day}
-        self.jia_greetings={"morning":["Good morning, Yukinno"],"afternoon":["Good afternoon, Yukinno"],"evening":["Good evening, Yukinno"],"night":["Good night, Yukinno 💤"]}
         self.member_join=self.database.find_one("member_join")
         self.michelley=287369884940238849
-        self.special_invite="XVTex62"
-        self.invite_uses=0
+        self.cultivators="s5mXMXV"
+        self.youtube_viewers='35WqJ7d'
+        self.invite_uses={
+            'cult':0,
+            'youtube':0
+        }
         # self.background_looper.start()
         bot.loop.create_task(self.background_functions())
 
@@ -43,13 +45,6 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
 
 
-    # @tasks.loop(hours=1)
-    # async def background_looper(self):
-    #     """
-    #     Background event function for Zheng Jia Yi's greetings
-    #     """
-
-
     async def background_functions(self):
         self.bot.loop.create_task(self.check_and_update())
 
@@ -59,9 +54,9 @@ class BackgroundEvents(commands.Cog,name='Events'):
         !--RUN ALL CONSISTANT BACKGROUND FUNCTIONS IN HERE--!
         """
         while True:
-            currentVoice=self.database.find_one('voice')
+            current_voice=self.database.find_one('voice')
             
-            if self.voice != currentVoice:
+            if self.voice != current_voice:
                 self.database.update_one({'_id':'voice'},{'$set':self.voice})
             
             await asyncio.sleep(750)
@@ -74,29 +69,17 @@ class BackgroundEvents(commands.Cog,name='Events'):
         """
         pass
 
-    # @commands.Cog.listener('on_command')
-    # async def cmd_counter(self,msg):
-    #     pass
 
 
     @commands.Cog.listener('on_member_join')
     async def member_welcome(self,user):
         if user.guild.id in [295717368129257472]:
-            code=[invite for invite in await user.guild.invites() if invite.code == self.special_invite][0]
-            if code.uses > self.invite_uses:
+            code=[invite for invite in await user.guild.invites() if invite.code == self.cultivators][0]
+            if code.uses > self.invite_uses['cult']:
                 role=[user.guild.get_role(487097805333331979)]
                 await user.edit(roles=user.roles+role)
-                self.invite_uses=code.uses
+                self.invite_uses['cult']=code.uses
 
-        if str(user.guild.id) in self.member_join:
-            chan=self.bot.get_channel(self.member_join[str(user.guild.id)]['greetings'])
-            if chan is None:
-                _user=self.bot.get_user(user.guild.owner_id)
-                self.member_join.pop(str(user.guild.id))
-                return await _user.send(f"The bot was unable to get the specifyied channel <#{self.member_join[str(user.guild.id)]['greetings']}>.\nThe bot has removed the auto new member welcomer, please reset it again.")
-
-            if chan is not None:
-                return await chan.send(f"{random.choice(self.member_join[str(user.guild.id)]['messages'])}")
 
 
 
@@ -124,35 +107,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
 
 
-
-
-
-    @commands.Cog.listener('on_message')
-    async def message_tracker(self,msg):
-        if not isinstance(msg.channel,discord.TextChannel):
-            return None
-
-        if msg.author.bot is True:
-            return None
-
-        if msg.guild.id in [251397504879296522,295717368129257472]:
-            if f"<@!{self.bot.user.id}>" in msg.content:
-                content=msg.content.replace(f'<@!{self.bot.user.id}> ','')
-                data=await self.chat_bot(content)
-                if data.ok:
-                    reply=data.json()['result']['fulfillment']['speech']
-                    if reply == '#love':
-                        not_yukinno=[f"Sorry {msg.author.name}, but I'm already taken by someone","I'm already taken \:)",f"Sorry, I'm already taken {msg.author.name}"]
-                        is_yukinno=['❤','<3','I ❤ you',f'I love you {msg.author.display_name}',f'My love is only for you {msg.author.name}']
-                        if msg.author.id == self.michelley:
-                            return await msg.channel.send(random.choice(is_yukinno))
-                        else:
-                            return await msg.channel.send(random.choice(not_yukinno))
-
-                    return await msg.channel.send(reply)
-                if not data.ok:
-                    return await msg.channel.send("Sorry, I'm experiencing some technical issues, please try again later D:")
-                    
+ 
 
         
 
@@ -210,7 +165,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
     
 
     @commands.is_owner()
-    @command(name='update-voice')
+    @command(name='update-voice',hidden=True)
     async def update_voice(self,msg):
         """
         Update the database with thee current data in the memory
@@ -225,7 +180,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
 
     @commands.is_owner()
-    @command(name='inc-voice',aliases=['add-voice'])
+    @command(name='inc-voice',aliases=['add-voice'],hidden=True)
     async def inc_voice(self,msg,user:discord.Member,amt:int=900):
         """
         Add a user to voice database with value
@@ -242,7 +197,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
 
     @commands.is_owner()
-    @command(name='reset-voice-db')
+    @command(name='reset-voice-db',hidden=True)
     async def reset_voice_db(self,msg):
         """
         Replace the current local data with the cloud
@@ -253,6 +208,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
             return await msg.message.add_reaction(emoji='✅')
 
         return await msg.send("No new changes in database detected")
+
 
 
     @command(name='voice-rank',aliases=['voiceRank'])
@@ -296,7 +252,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
         
         try:
             return await msg.send(f"```yaml\n{ranks}```")
-        except Exception as Error:
+        except Exception:
             return await msg.send("Something went wrong.\nPlease try again later")
 
 

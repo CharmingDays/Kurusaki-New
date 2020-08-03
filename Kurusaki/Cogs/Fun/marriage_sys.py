@@ -24,7 +24,6 @@ class Marriage(Cog):
             
 
 
-
     async def gen_code(self,author,user):
         code=""
         loops=0
@@ -76,6 +75,8 @@ class Marriage(Cog):
 
     @propose.error
     async def propose_error(self,msg):
+        """
+        """
         pass
 
 
@@ -98,18 +99,18 @@ class Marriage(Cog):
         return await msg.send("Sorry, the accept code doesn't exist\nPlease check your spelling and case sensitivity")
 
 
-    async def make_image(self,msg,user):
-        raw_img1=rq.get(msg.author.avatar_url).content
-        img1=Image.open(io.BytesIO(raw_img1))
-        raw_img=rq.get(user.avatar_url).content
-        img=Image.open(io.BytesIO(raw_img))
-        new = Image.new('RGB', (img.width + img.width, img.height+img.height))
-        new.paste(img1, (0+40, img1.height//2))
-        new.paste(img, (img.width, img.height//2))
-        resize=new.resize(size=(359,359))
-        crop_size=(50,56,339,320)
-        cropped=resize.crop(crop_size)
-        final=cropped.resize(size=(359,359))
+    # async def make_image(self,msg,user):
+    #     raw_img1=rq.get(msg.author.avatar_url).content
+    #     img1=Image.open(io.BytesIO(raw_img1))
+    #     raw_img=rq.get(user.avatar_url).content
+    #     img=Image.open(io.BytesIO(raw_img))
+    #     new = Image.new('RGB', (img.width + img.width, img.height+img.height))
+    #     new.paste(img1, (0+40, img1.height//2))
+    #     new.paste(img, (img.width, img.height//2))
+    #     resize=new.resize(size=(359,359))
+    #     crop_size=(50,56,339,320)
+    #     cropped=resize.crop(crop_size)
+    #     final=cropped.resize(size=(359,359))
         
 
 

@@ -40,10 +40,10 @@ class Channel(commands.Cog):
 
     @commands.cooldown(per=60,rate=1,type=commands.BucketType.guild)
     @command(name='server-msgs')
-    async def servermessages(self,msg,user:discord.Member=None):
+    async def serverMessages(self,msg,user:discord.Member=None):
         """
         Check the amount oof messages sent in the server from the mentioned user.
-        `Ex: s.server-msgs @User
+        `Ex:` s.server-msgs @User
         `Note:` Has a cooldown of 60 seconds for entire server per use
         """
         amts=0
@@ -316,11 +316,13 @@ class Channel(commands.Cog):
     #!-----------VOICE CHANNEL COMMADDS START HERE --------------!
     def cancel_voice():
     #pylint: disable=no-method-argument
+    #Python: disable=no-method-argument
         def predicate(msg):
             if msg.author.voice:
                 return 'sleep' in msg.author.voice.channel.name.lower()
 
         return commands.check(predicate)
+
 
 
 def setup(bot):
