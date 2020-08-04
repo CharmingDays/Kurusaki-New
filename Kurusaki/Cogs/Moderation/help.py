@@ -13,10 +13,11 @@ class MyHelpCommand(commands.MinimalHelpCommand):
 
 
     async def send_bot_help(self, map):
-        emb = discord.Embed(colour=self.random_color, title="Help Commands", description=f"**For a list of command categories** `{self.context.prefix}categories`\n**For help with a specific command** {self.context.prefix}help `Command Name`\n**For a list of all commands in a specific categories** `{self.context.prefix}help` **Categories Name**\n\n\n[Invite Bot](https://discordapp.com/oauth2/authorize?client_id=403402614454353941&scope=bot&permissions=8) | [Bot Server](https://discord.gg/xXf8pFr)")
+        emb = discord.Embed(colour=self.random_color, title="Help Commands", description=f"**For a list of command categories** `{self.context.prefix}categories`\n**For help with a specific command** {self.context.prefix}help `Command Name`\n**For a list of commands in a specific categories** `{self.context.prefix}help categories name`**\n\n\n[Invite Bot](https://discordapp.com/oauth2/authorize?client_id=403402614454353941&scope=bot&permissions=8) | [Bot Server](https://discord.gg/xXf8pFr)")
         emb.set_thumbnail(url=self.context.bot.user.avatar_url)
         emb.set_footer(icon_url=self.context.guild.icon_url,text=self.context.guild.name)
         return await self.context.send(embed=emb)
+
 
     async def send_command_help(self, command):
         command_doc=command.help
@@ -32,6 +33,15 @@ class MyHelpCommand(commands.MinimalHelpCommand):
         return await self.context.send(embed=emb)
 
     async def send_cog_help(self,cog):
+        internal_docs={
+            "economy":[
+                "`shop` - See the list of items that are avaliable to buy with the currency"
+                "`admin-econ-update` - Trigger the update of the economy database to mongoDB",
+                "`update-voice` - Update the database with thee current data in the memory",
+                "`voice-inc` - Add a user to voice database with value",
+                "`reset-voice-db` - Replace the current local data with the cloud"
+            ]
+        }
         cog_help=[]
         for i in cog.get_commands():
             if i.enabled is True:
@@ -39,7 +49,7 @@ class MyHelpCommand(commands.MinimalHelpCommand):
                     cog_help.append(f"`{i.name}` - {i.short_doc}")
                 if i.hidden is False:
                     cog_help.append(f"`{i.name}` - {i.short_doc}")
-
+        
         names=' \n'.join(cog_help)
         emb=discord.Embed(title=f"**{cog.qualified_name}**",description=names,color=self.random_color)
         emb.set_thumbnail(url=self.context.guild.icon_url)

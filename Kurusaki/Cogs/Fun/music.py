@@ -2,8 +2,6 @@ import discord,asyncio,random,pymongo,youtube_dl,string,os
 from discord.ext import commands
 from discord.ext.commands import command
 
-
-
 #TODO: CREATE PLAYLIST SUPPORT FOR MUSIC
 
 
@@ -76,9 +74,13 @@ class Downloader(discord.PCMVolumeTransformer):
 
 
 
-    async def get_info(self,url):
+    async def get_info(self,query):
+        """
+        Search for an info about a specific query
+        NOTE: DOES NOT DOWNLOAD THE FILE AND ONLY RETURNS THE DATA
+        """
         yt=youtube_dl.YoutubeDL(stim)
-        down=yt.extract_info(url,download=False)
+        down=yt.extract_info(query,download=False)
         data1={'queue':[]}
         if 'entries' in down:
             if len(down['entries']) > 1:
@@ -104,9 +106,15 @@ class MusicPlayer(commands.Cog,name='Music'):
 
     @property
     def random_color(self):
+        """
+        Return a random discord embed color
+        """
         return discord.Color.from_rgb(random.randint(1,255),random.randint(1,255),random.randint(1,255))
 
     def cog_unload(self):
+        """
+        Updates the music database once cog unloads or disconnects
+        """
         current=self.database.find_one('music')
         if current != self.voice:
             self.database.update_one({'_id':'music'},{'$set':self.music})
@@ -115,6 +123,9 @@ class MusicPlayer(commands.Cog,name='Music'):
 
     @commands.Cog.listener('on_voice_state_update')
     async def music_voice(self,user,before,after):
+        """
+        Event listener for clearing the queue when the bot disconnects (leaves) from the voice channel 
+        """
         if after.channel is None and user.id == self.bot.user.id:
             try:
                 self.player[user.guild.id]['queue'].clear()
@@ -124,6 +135,9 @@ class MusicPlayer(commands.Cog,name='Music'):
 
 
     async def filename_generator(self):
+        """
+        Generates a unique file name for youtube-dl write the audio file
+        """
         chars=list(string.ascii_letters+string.digits)
         name=''
         for i in range(random.randint(9,25)):
@@ -137,12 +151,18 @@ class MusicPlayer(commands.Cog,name='Music'):
 
 
     async def playlist(self,data,msg):
-        for i in data['queue']:
-            self.player[msg.guild.id]['queue'].append({'title':i,'author':msg})
+        """
+        Appends the list of songs into the server's queue list
+        """
+        for song in data['queue']:
+            self.player[msg.guild.id]['queue'].append({'title':song,'author':msg})
 
 
 
     async def queue(self,msg,song):
+        """
+        Adding a song to the current server's queue
+        """
         title1=await Downloader.get_info(self,url=song)
         title=title1[0]
         data=title1[1]
@@ -224,6 +244,9 @@ class MusicPlayer(commands.Cog,name='Music'):
     
 
     async def start_song(self,msg,song):
+        """
+        Main function for starting the songs and downloading the audio file
+        """
         new_opts=ytdl_format_options.copy()
         audio_name=await self.filename_generator()
 
@@ -361,8 +384,8 @@ class MusicPlayer(commands.Cog,name='Music'):
             return await msg.send("**No audio currently playing or songs in queue**".title(),delete_after=25)
 
         self.player[msg.guild.id]['reset']=True
-        #NOTE: LET THE DONE FUNCTION KNOW THAT IT'S BEING RESETED WHEN AUDIO STOPS PLAYING
-        msg.voice_client.stop()
+        #NOTE: LET THE DONE FUNCTION KNOW THAT IT'S BEING RESET WHEN AUDIO STOPS PLAYING
+        return msg.voice_client.stop()
             
 
 
@@ -536,6 +559,9 @@ class MusicPlayer(commands.Cog,name='Music'):
 
     @join.before_invoke
     async def before_join(self,msg):
+        """
+        Checks to see if the command use is in a voice channel
+        """
         if msg.author.voice is None:
             return await msg.send("You are not in a voice channel")
 
@@ -579,6 +605,9 @@ class MusicPlayer(commands.Cog,name='Music'):
     
     @volume.error
     async def volume_error(self,msg,error):
+        """
+        Error if the user's permission level is too low
+        """
         if isinstance(error,commands.MissingPermissions):
             return await msg.send("Manage channels or admin perms required to change volume",delete_after=30)
 

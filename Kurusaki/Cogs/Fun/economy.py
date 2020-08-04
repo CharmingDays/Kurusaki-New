@@ -76,22 +76,22 @@ class Economy(Cog):
             if len(msg.content) <=5:
                 self.data[str(msg.author.id)]+=1
                 self.data_counter+=1
-                return 
+                return None
 
             if len(msg.content) <=20 and len(msg.content) >5:
                 self.data[str(msg.author.id)]+=6
                 self.data_counter+=1
-                return 
+                return None
 
             if len(msg.content) <=50 and len(msg.content) >20:
                 self.data[str(msg.author.id)]+=10
                 self.data_counter+=1
-                return 
+                return None
 
             if len(msg.content) >=100 and len(msg.content) >50:
                 self.data[str(msg.author.id)]+=15
                 self.data_counter+=1
-                return 
+                return None
 
             if self.data_counter >= 1000:
                 #NOTE: THIS WILL LATER BE CHANGED INTO A TIMER WHEN MORE USERS ARE PRESENTLY USING THIS FEATURE
@@ -99,7 +99,7 @@ class Economy(Cog):
      
         elif msg.author.bot == False and str(msg.author.id) not in self.data:
             self.data[str(msg.author.id)]=5
-            return
+            return None
 
 
     @command(name='econ-on',aliases=['activate-econ','activateEcon','econon'])

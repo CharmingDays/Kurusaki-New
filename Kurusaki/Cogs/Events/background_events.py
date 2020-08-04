@@ -180,8 +180,8 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
 
     @commands.is_owner()
-    @command(name='inc-voice',aliases=['add-voice'],hidden=True)
-    async def inc_voice(self,msg,user:discord.Member,amt:int=900):
+    @command(name='voice-inc',aliases=['add-voice'],hidden=True)
+    async def voice_inc(self,msg,user:discord.Member,amt:int=900):
         """
         Add a user to voice database with value
         """
