@@ -211,7 +211,7 @@ class Channel(commands.Cog):
 
     @commands.has_permissions(manage_channels=True)
     @command()
-    async def clone(self,msg,newName=None,chan:discord.TextChannel=None):
+    async def clone(self,msg,new_name=None,chan:discord.TextChannel=None):
         """
         Clone a specific channel or the current one with specific name or same name
         `Ex:` s.clone general-chat-clone #general
@@ -219,17 +219,17 @@ class Channel(commands.Cog):
         `Note:` If no new name is provided default name is used, without channel to clone mentioned it'll clone current one
         `Command:` clone(new-Name,channel-To-Clone)
         """
-        if newName is None:
-            newName=f"clone-{msg.channel.name}"
+        if new_name is None:
+            new_name=f"clone-{msg.channel.name}"
     
         if chan is None:
-            await msg.channel.clone(name=newName,reason=f'Command used by {msg.author.name}({msg.author.id})')
-            await msg.send(f"Channel `{msg.channel.name}` cloned and named **{newName}**",)
+            await msg.channel.clone(name=new_name,reason=f'Command used by {msg.author.name}({msg.author.id})')
+            await msg.send(f"Channel `{msg.channel.name}` cloned and named **{new_name}**",)
 
 
         if chan is not None:
-            await chan.clone(name=newName,reason=f'Command used by {msg.author.name}({msg.author.id})')
-            await msg.send(f"Channel `{chan.name}` cloned and named **{newName}**")
+            await chan.clone(name=new_name,reason=f'Command used by {msg.author.name}({msg.author.id})')
+            await msg.send(f"Channel `{chan.name}` cloned and named **{new_name}**")
 
 
     @commands.has_permissions(manage_messages=True)

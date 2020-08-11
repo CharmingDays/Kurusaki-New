@@ -114,7 +114,7 @@ class Member(commands.Cog):
                 try:
                     await msg.guild.ban(user=user)
                     banned.append(user.name)
-                except:
+                except Exception:
                     failed.append(user.name)
 
             if banned:
@@ -145,7 +145,7 @@ class Member(commands.Cog):
                 try:
                     await msg.guild.kick(user=user)
                     booted.append(user.name)
-                except:
+                except Exception:
                     failed.append(user.name)
 
             if booted:
@@ -223,11 +223,7 @@ class Member(commands.Cog):
         `Permissions:` Move Members
         `Command:` move-to(users:list,chan:required)
         """
-        no_voice=[]
         for user in users:
-            if user.voice:
-                #User in voice channel?
-                pass
             await user.move_to(chan,reason=f'Command used by {msg.author.name}({msg.author.id})')
 
         return await msg.message.add_reaction(emoji='✅')
@@ -244,7 +240,6 @@ class Member(commands.Cog):
         `Permissions:` Manage Nicknames
         `Command:` changenick(users:list, new-name)
         """
-        before=users
         if name is not None:
             for user in users:
                 await user.edit(nick=name)

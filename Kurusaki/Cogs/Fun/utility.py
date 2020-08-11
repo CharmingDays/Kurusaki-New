@@ -6,19 +6,30 @@ class Utility(commands.Cog):
     def __init__(self,bot):
         self.bot=bot
 
-    @command()
-    async def remind(self,msg,*,message):
-        pass
+    async def timer_completed(self,msg):
+        await msg.send(f"Timer complete, {msg.author.mention}")
 
-    
-    @command()
-    async def timer(self,msg,hours,minutes,seconds):
+    @commands.cooldown(rate=2,per=30,type=commands.BucketType.user)
+    @command(name='set-timer')
+    async def set_timer(self,msg,hours,minutes,seconds):
+        """
+        Set a timer to do for the bot
+        `Ex`: s.set-timer 2 31 23
+        `Format`: Hours Minutes Seconds
+        `Cooldown`: 30 seconds per command per user
+        `Command`: set-timer(hours,minutes,seconds)
+        """
         when=datetime.datetime.utcnow() + datetime.timedelta(hours=hours,minutes=minutes,seconds=seconds)
-        timer_done=await msg.send("Timmer complete")
-        sleep_until(when,timer_done)
+        timer=sleep_until(when,self.timer_completed)
+        return await timer(msg)
 
-    @command()
+
+
+    @command(aliases=['latency'])
     async def ping(self,msg):
+        """
+        Check to see how long it's taking for the bot to respond to you
+        """
         return await msg.send(f"Pong! 🏓 {round(self.bot.latency,3)}")
 
 

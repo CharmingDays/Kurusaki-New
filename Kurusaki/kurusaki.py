@@ -66,6 +66,7 @@ async def on_disconnect():
 
 extensions=[
     'Cogs.Moderation.member',
+    'Cogs.Fun.utility',
     'Cogs.Moderation.channels',
     "Cogs.Moderation.guild",
     "Cogs.Fun.music",
