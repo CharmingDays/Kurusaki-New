@@ -94,7 +94,7 @@ class Server(commands.Cog):
                 return await msg.send("Could not use the provided image link as server icon")
 
     @commands.has_any_role(487097805333331979,404374021602279436,401152167060307999,405935187210403840)
-    @command()
+    @command(hidden=True)
     async def sinvite(self,msg):
         """
         Invite a member into the server with fixed/given role Cultivator
