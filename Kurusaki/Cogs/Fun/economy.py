@@ -157,7 +157,7 @@ class Economy(Cog):
                 break
             data="{}: {} - {}\n"
             data_format+=data.format(index+1,user[0].name,user[1])
-        
+
         return await msg.send(f"```yaml\n{data_format}\n```")
 
 
