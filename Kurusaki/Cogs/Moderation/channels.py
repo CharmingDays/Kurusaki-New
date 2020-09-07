@@ -90,6 +90,7 @@ class Channel(commands.Cog):
         `Permissions:` Manage Messages
         """
         await msg.send("Please wait while the bot tries to delete all possible messages")
+        _limit+=1
         if _limit >= 2000:
             _limit=2000
             await msg.send("Purge limit has exceeded 2000, setting new limit to 2000")

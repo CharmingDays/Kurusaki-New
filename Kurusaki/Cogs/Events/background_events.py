@@ -71,14 +71,14 @@ class BackgroundEvents(commands.Cog,name='Events'):
 
 
 
-    @commands.Cog.listener('on_member_join')
-    async def member_welcome(self,user):
-        if user.guild.id in [295717368129257472]:
-            code=[invite for invite in await user.guild.invites() if invite.code == self.cultivators][0]
-            if code.uses > self.invite_uses['cult']:
-                role=[user.guild.get_role(487097805333331979)]
-                await user.edit(roles=user.roles+role)
-                self.invite_uses['cult']=code.uses
+    # @commands.Cog.listener('on_member_join')
+    # async def member_welcome(self,user):
+        # if user.guild.id in [295717368129257472]:
+        #     code=[invite for invite in await user.guild.invites() if invite.code == self.cultivators][0]
+        #     if code.uses > self.invite_uses['cult']:
+        #         role=[user.guild.get_role(487097805333331979)]
+        #         await user.edit(roles=user.roles+role)
+        #         self.invite_uses['cult']=code.uses
 
 
 
