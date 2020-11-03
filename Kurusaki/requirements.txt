@@ -1,10 +1,10 @@
 python-dotenv
-discord
+git+https://github.com/Rapptz/discord.py
 requests
 names
 nekos.py
-pymongo
 dnspython
+pymongo
 youtube-dl
 RandomWords
 bs4

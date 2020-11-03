@@ -18,6 +18,19 @@
 #     await self.bot.logout()
 
 
+    async def chat_bot(self,query):
+        """
+        Request query to the api.ai for chat bot
+        """
+        TOKEN="ad1c55f60a78435195cd95fc4bba02e9"
+        BASE_URL=f"https://api.dialogflow.com/v1/query?v=20150910&sessionId=12345&lang=en&query={query}"
+        headers={
+            "Authorization": f"Bearer {TOKEN}",
+            "Content-Type": "application/json"
+        }
+        r=rq.get(url=BASE_URL,headers=headers)
+        return r
+
 
 #NOTE: saved for Michelle's AI chat coding 
 # @commands.Cog.listener('on_message')

@@ -1,14 +1,18 @@
 import discord,asyncio,random,pymongo,youtube_dl,string,os
 from discord.ext import commands
 from discord.ext.commands import command
+from googleapiclient.discovery import build
 
 #TODO: CREATE PLAYLIST SUPPORT FOR MUSIC
 
 
 #flat-playlist:True?
 #extract_flat:True
+#audioquality 0 best 9 worst
+#format bestaudio/best or worstaudio
 ytdl_format_options= {
-    'format': 'bestaudio/best',
+    'audioquality':8,
+    'format': 'worstaudio',
     'outtmpl': '{}',
     'restrictfilenames': True,
     'noplaylist': True,
@@ -20,9 +24,8 @@ ytdl_format_options= {
     'quiet': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+    'source_address': '0.0.0.0' #bind to ipv4 since ipv6 addresses cause issues sometimes
 }
-
 stim= {
     'default_search': 'auto',
     "ignoreerrors":True,
@@ -53,6 +56,35 @@ class Downloader(discord.PCMVolumeTransformer):
         self.views=data.get('view_count')
         self.playlist={}
 
+
+
+
+    @classmethod
+    async def yt_download(cls,api_key,url,ytdl,*,loop=None,stream=False):
+        """
+        URL is not supported this function
+        Download the video directly from link in YT_DL
+        """
+        # API_KEY=os.getenv('YT_TOKEN')
+        youtube=build('youtube','v3',developerKey=api_key)
+        data=youtube.search().list(part='snippet',q=url).execute()
+        first_song=data[0]['id']['videoId']
+        song_info=data
+        download= await loop.run_in_executor(None,lambda: ytdl.extract_info(first_song,download=not stream))
+        filename=data['url'] if stream else ytdl.prepare_filename(download)
+        return cls(discord.FFmpegPCMAudio(filename,**ffmpeg_options),data=download),song_info
+
+
+    async def get_song(self,api_key,song):
+        # API_KEY=os.getenv('YT_TOKEN')
+        youtube=build('youtube','v3',developerKey=api_key)
+        data=youtube.search().list(part='snippet',q=song).execute()
+        first_song={
+            "link":data[0]['id']['videoId'],
+            "title":data[0]['snippet']['title'],
+            "thumbnail":data[0]['snippet']['thumbnails']['default']['url']
+            }
+        return first_song
 
 
 
@@ -97,12 +129,39 @@ class MusicPlayer(commands.Cog,name='Music'):
     A list of commands to control the bot's audio streaming features
     """
     def __init__(self,client):
+        """
+        Add self.yt_token='your youtube token here'
+        for youtube_api access
+        """
         self.bot=client
-        self.database = pymongo.MongoClient(os.getenv('MONGO'))['Discord-Bot-Database']['General']
-        self.music=self.database.find_one('music')
+        # pymongo.MongoClient(os.getenv('MONGO'))['Discord-Bot-Database']['General']
+        # self.database = os.getenv('MONGO')
+        # self.music=self.database.find_one('music')
         self.player={
             "audio_files":[]
         }
+        self.setup_vars()
+
+
+    def setup_vars(self):
+        """
+        Here is where you setup your database connections
+        Each condition checks if an env variable exists
+        """
+
+        if hasattr(self,'yt_token') and self.yt_token is None:
+            delattr(self,'yt_token')
+
+
+        if hasattr(self,'database'):
+            if self.database is not None:
+                self.database = pymongo.MongoClient(self.database)['Discord-Bot-Database']['General']
+                self.database = os.getenv('MONGO')
+                self.music=self.database.find_one('music')
+            else:
+                delattr(self,'database')
+
+
 
     @property
     def random_color(self):
@@ -115,9 +174,10 @@ class MusicPlayer(commands.Cog,name='Music'):
         """
         Updates the music database once cog unloads or disconnects
         """
-        current=self.database.find_one('music')
-        if current != self.voice:
-            self.database.update_one({'_id':'music'},{'$set':self.music})
+        if hasattr(self,'database'):
+            current=self.database.find_one('music')
+            if current != self.voice:
+                self.database.update_one({'_id':'music'},{'$set':self.music})
 
 
 
@@ -281,6 +341,17 @@ class MusicPlayer(commands.Cog,name='Music'):
 
 
 
+    @command(name='server-songs')
+    async def server_songs(self,msg):
+        """
+        View the songs that other servers are currently playing
+        """
+        servers={}
+        for server in self.players:
+            pass
+        
+
+
     @command()
     async def play(self,msg,*,song):
         """
@@ -307,7 +378,8 @@ class MusicPlayer(commands.Cog,name='Music'):
                 'author':msg,
                 'name':None,
                 "reset":False, #FOR RESTARTING THE AUDIO FROM BEGINING
-                'repeat':False
+                'repeat':False,
+                'volume':80
             }
             return await self.start_song(msg,song)
 
@@ -432,6 +504,10 @@ class MusicPlayer(commands.Cog,name='Music'):
             return await msg.send("You must be in the same voice channel as the bot")
 
         if msg.author.voice is not None and msg.voice_client is not None:
+            if self.player[msg.guild.id]['repeat']== True:
+                #NOTE:SETS THE REPEAT PROCESS TO FALSE 
+                self.player[msg.guild.id]['repeat']=False
+            
             if  msg.voice_client.is_playing() is True or self.player[msg.guild.id]['queue']:
                 self.player[msg.guild.id]['queue'].clear()
                 self.player[msg.guild.id]['repeat']=False
@@ -595,6 +671,7 @@ class MusicPlayer(commands.Cog,name='Music'):
                 if msg.voice_client.channel == msg.author.voice.channel and msg.voice_client.is_playing() is True:
                     msg.voice_client.source.volume=vol
                     if (msg.guild.id) in self.music:
+                        self.player[msg.guild.id]['volume']=vol
                         self.music[str(msg.guild.id)]['vol']=vol
                     return await msg.message.add_reaction(emoji='✅')
                     

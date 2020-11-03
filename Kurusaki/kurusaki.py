@@ -2,9 +2,9 @@ import json
 import discord,asyncio,os
 from discord.ext import commands
 from discord.ext.commands import Greedy
-from dotenv import load_dotenv
 from discord.ext import tasks
 import logging,random
+from dotenv import load_dotenv
 load_dotenv()
 
 
@@ -66,15 +66,15 @@ async def on_disconnect():
 
 extensions=[
     'Cogs.Moderation.member',
-    'Cogs.Fun.utility',
+    # 'Cogs.Fun.utility',
     'Cogs.Moderation.channels',
     "Cogs.Moderation.guild",
-    "Cogs.Fun.music",
+    # "Cogs.Fun.music",
     'Cogs.Moderation.help',
     'Cogs.Events.background_events'
     ]
 
-
+\
 
 for ext in extensions:
     bot.load_extension(ext)

@@ -1,4 +1,5 @@
 import discord,asyncio,time,random,names,requests as rq,pymongo,os,json
+from discord.ext.commands.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import command
 from discord.utils import sleep_until
@@ -12,29 +13,14 @@ class BackgroundEvents(commands.Cog,name='Events'):
         self.database=pymongo.MongoClient(os.getenv('MONGO'))['Discord-Bot-Database']['General']
         self.voice=self.database.find_one("voice")
         self.member_join=self.database.find_one("member_join")
-        self.michelley=287369884940238849
-        self.cultivators="s5mXMXV"
-        self.youtube_viewers='35WqJ7d'
-        self.invite_uses={
-            'cult':0,
-            'youtube':0
-        }
         # self.background_looper.start()
         bot.loop.create_task(self.background_functions())
 
 
-    async def chat_bot(self,query):
-        """
-        Request query to the api.ai for chat bot
-        """
-        TOKEN="ad1c55f60a78435195cd95fc4bba02e9"
-        BASE_URL=f"https://api.dialogflow.com/v1/query?v=20150910&sessionId=12345&lang=en&query={query}"
-        headers={
-            "Authorization": f"Bearer {TOKEN}",
-            "Content-Type": "application/json"
-        }
-        r=rq.get(url=BASE_URL,headers=headers)
-        return r
+    def databaseConnection(self):
+        databaseURR = os.getenv("MONGO")
+        if databaseURR is None:
+            pass
 
 
     def cog_unload(self):
@@ -42,6 +28,12 @@ class BackgroundEvents(commands.Cog,name='Events'):
         if current != self.voice:
             self.database.update_one({'_id':'voice'},{'$set':self.voice})
 
+
+
+
+    @Cog.listener('on_command')
+    async def command_events(self,msg):
+        pass #add command being used counter
 
 
 
@@ -70,44 +62,6 @@ class BackgroundEvents(commands.Cog,name='Events'):
         pass
 
 
-
-    # @commands.Cog.listener('on_member_join')
-    # async def member_welcome(self,user):
-        # if user.guild.id in [295717368129257472]:
-        #     code=[invite for invite in await user.guild.invites() if invite.code == self.cultivators][0]
-        #     if code.uses > self.invite_uses['cult']:
-        #         role=[user.guild.get_role(487097805333331979)]
-        #         await user.edit(roles=user.roles+role)
-        #         self.invite_uses['cult']=code.uses
-
-
-
-
-    @commands.Cog.listener('on_reaction_add')
-    async def reaction_message_remove(self,emote,user):
-        if user.id != self.bot.user.id and user.bot is False:
-    
-            if emote.custom_emoji is True and emote.emoji.id == 720136533608366121: #NOTE:VALORANT
-                role= [user.guild.get_role(705234981319999488)]
-                if role[0] in user.roles:
-                    return 
-                return await user.edit(roles=user.roles+role)
-
-            if emote.custom_emoji is True and emote.emoji.id == 720136639992561735:#NOTE:LEAGUE Public
-                role=[user.guild.get_role(719780262753337394)]
-                if role[0] in user.roles:
-                    return 
-                return await user.edit(roles=user.roles+role)
-
-            if emote.custom_emoji is True and emote.emoji.id == 720137028448026656: #NOTE:OVERWATCH
-                role=[user.guild.get_role(720174578504171581)]
-                if role[0] in user.roles:
-                    return 
-                return await user.edit(roles=user.roles+role)
-
-
-
- 
 
         
 
@@ -141,6 +95,7 @@ class BackgroundEvents(commands.Cog,name='Events'):
             return await msg.send("This command is only for the bot owners")
 
         print(error)
+
 
 
     @command(name='voice-time')

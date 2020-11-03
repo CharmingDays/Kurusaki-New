@@ -2,6 +2,11 @@ import asyncio,time,datetime,random,names,pymongo,discord,os
 from discord.ext import commands
 from discord.ext.commands import Cog, command
 from discord.utils import sleep_until
+
+
+
+
+
 class Utility(commands.Cog):
     def __init__(self,bot):
         self.bot=bot
@@ -61,7 +66,7 @@ class Utility(commands.Cog):
         """
         pass
 
-    @commands.group(name='briefing')
+    @commands.group()
     @commands.cooldown(rate=2,per=3600,type=commands.BucketType.user)
     async def online_briefing(self,msg):
         """
