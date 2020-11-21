@@ -75,6 +75,7 @@ class Server(commands.Cog):
         `Ex:` s.new-icon https://i.pinimg.com/originals/7c/46/44/7c4644a00c5c1e46dda0d9263bf6cf62.jpg (Or upload an image)
         """
         if url is None:
+            #check if there is an image uploaded
             if msg.message.attachments:
                 try:
                     image=rq.get(msg.message.attachments.url).content
@@ -91,26 +92,9 @@ class Server(commands.Cog):
                 await msg.guild.edit(icon=image,reason=f"Server icon changed by {msg.author.name} ({msg.author.id})")
                 return await msg.send(f"New icon set to {url}")
             except Exception as Error:
-                return await msg.send("Could not use the provided image link as server icon")
+                return await msg.send("Could not use the provided image link as server icon")        
 
-    @commands.has_any_role(487097805333331979,404374021602279436,401152167060307999,405935187210403840)
-    @command(hidden=True)
-    async def sinvite(self,msg):
-        """
-        Invite a member into the server with fixed/given role Cultivator
-        `Ex:` s.sinvite
-        `Command:` sinvite()
-        """
-        return await msg.send("https://discord.gg/XVTex62\nThis message will be deleted after 30 seconds",delete_after=30)
-        
 
-    @sinvite.error
-    async def sinvite_error(self,msg,error):
-        if isinstance(error,commands.CheckFailure):
-            return await msg.send("Only members with role Cultivator can use this command")
-        
-        return await msg.send("Something went wrong, please try again or ask <@!185181025104560128>")
-    
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @command(name='server-rename')

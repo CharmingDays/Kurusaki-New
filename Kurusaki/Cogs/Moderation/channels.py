@@ -23,18 +23,13 @@ class Channel(commands.Cog):
         await msg.send(f"Processing {msg.channel.mention}'s messages...")
         package=await msg.channel.history(limit=None).flatten()
         if user is None:
-            await msg.send(f"Selecting {msg.author.name}'s messages in {msg.channel.mention}")
-            for i in package:
-                if i.author.id == msg.author.id:
-                    amts+=1
-            await msg.send(f"{amts}/{len(package)} messages sent by {msg.author.name} in {msg.channel.name}")
-        if user is not None:
-            await msg.send(f"Selecting {user.name}'s messages in {msg.channel.mention}")
-            for i in package:
-                if i.author.id == user.id:
-                    amts+=1
+            user = msg.author
 
-            await msg.send(f"{amts}/{len(package)} messages sent by {user.name} in {msg.channel.name}")
+        await msg.send(f"Selecting {msg.author.name}'s messages in {msg.channel.mention}")
+        for i in package:
+            if i.author.id == msg.author.id:
+                amts+=1
+        await msg.send(f"{amts}/{len(package)} messages sent by {msg.author.name} in {msg.channel.name}")
 
         
 
@@ -51,33 +46,16 @@ class Channel(commands.Cog):
         channels=[await chan.history(limit=None).flatten() for chan in msg.guild.text_channels]
         total=0
         if user is None:
-            await msg.send(f"Counting {msg.author.name}'s messages in {msg.guild.name}")
-            for i in channels:
-                for x in i:
-                    total+=1
-                    if x.author.id == msg.author.id:
-                        amts+=1
+            user = msg.author
 
-            await msg.send(f"{amts}/{total} messages send by {msg.author.name} in {msg.guild.name}")
+        await msg.send(f"Counting {msg.author.name}'s messages in {msg.guild.name}")
+        for i in channels:
+            for x in i:
+                total+=1
+                if x.author.id == msg.author.id:
+                    amts+=1
 
-        if user is not None:
-            await msg.send(f"Counting {user.name}'s messages in {msg.guild.name}")
-            for i in channels:
-                for x in i:
-                    total+=1
-                    if x.author.id == user.id:
-                        amts+=1
-
-            await msg.send(f"{amts}/{total} messages send by {user.name} in {msg.guild.name}")
-
-
-    # @commands.group(name='msg')
-    # @commands.guild_only()
-    # @commands.has_permissions(manage_messages=True)
-    # async def msg_manage(self,msg):
-    #     if msg.invoked_subcommand is None:
-    #         return msg.send(msg.command.help)
-            
+        await msg.send(f"{amts}/{total} messages send by {msg.author.name} in {msg.guild.name}")
 
 
     @commands.has_permissions(manage_messages=True,read_message_history=True)
@@ -90,13 +68,13 @@ class Channel(commands.Cog):
         `Permissions:` Manage Messages
         """
         await msg.send("Please wait while the bot tries to delete all possible messages")
-        _limit+=1
         if _limit >= 2000:
             _limit=2000
             await msg.send("Purge limit has exceeded 2000, setting new limit to 2000")
-        await asyncio.sleep(3)
+        await asyncio.sleep(2.5)
         await msg.channel.purge(limit=_limit)
-        return await msg.send(f'{msg.author.mention} ✅',delete_after=20) #NOTE: Can't use reaction as it deletes the messages
+        #NOTE: Can't use reaction as it deletes the messages
+        return await msg.send(f'{msg.author.mention} ✅',delete_after=20) 
 
 
 
@@ -109,7 +87,7 @@ class Channel(commands.Cog):
         `Permissions:` Manage Channels
         """
         if newName is None:
-            newName=f'new-channel-name{random.randint(2,55)}'
+            newName=f'general-{random.randint(2,5524)}'
         await msg.channel.edit(name=newName,reason=f"Command used by {msg.author.name}({msg.author.id})")
         await msg.send(f"Channel {msg.channel.name} is now called **{newName}**")
 
@@ -124,8 +102,6 @@ class Channel(commands.Cog):
         """
         await msg.channel.edit(topic=new_topic,reason=f'Command used by {msg.author.name}({msg.author.id})')
         await msg.send(f"Topic channel changed to {new_topic}")
-
-
 
 
     @commands.has_permissions(manage_channels=True)
@@ -182,6 +158,7 @@ class Channel(commands.Cog):
         Enable slowmode for the text channel
         `Ex:` s.smode on/off 434
         `Permissions:` Manage Channels
+        `Note -` time is in seconds
         """
         if switch is None:
             if msg.channel.slowmode_delay == 0:
@@ -224,13 +201,10 @@ class Channel(commands.Cog):
             new_name=f"clone-{msg.channel.name}"
     
         if chan is None:
-            await msg.channel.clone(name=new_name,reason=f'Command used by {msg.author.name}({msg.author.id})')
-            await msg.send(f"Channel `{msg.channel.name}` cloned and named **{new_name}**",)
+            chan = msg.channe
 
-
-        if chan is not None:
-            await chan.clone(name=new_name,reason=f'Command used by {msg.author.name}({msg.author.id})')
-            await msg.send(f"Channel `{chan.name}` cloned and named **{new_name}**")
+        await chan.clone(name=new_name,reason=f'Command used by {msg.author.name}({msg.author.id})')
+        await msg.send(f"Channel `{chan.name}` cloned and named **{new_name}**")
 
 
     @commands.has_permissions(manage_messages=True)
@@ -267,12 +241,10 @@ class Channel(commands.Cog):
         `Command:` create-webhook(webhook-Name)
         """
         if name is None:
-            web=await msg.channel.create_webhook(name=names.get_first_name(),reason=f'Command used by {msg.author.name}({msg.author.id})')
-            await msg.send(f"Webhook {web.name} created for {web.channel.name}")
+            name = names.get_first_name()
 
-        if name is not None:
-            web=await msg.channel.create_webhook(name=name,reason=f'Command used by {msg.author.name}({msg.author.id})')
-            await msg.send(f"Webhook {web.name} created for {web.channel.name}")
+        web=await msg.channel.create_webhook(name=name,reason=f'Command used by {msg.author.name}({msg.author.id})')
+        await msg.send(f"Webhook {web.name} created for {web.channel.name}")
 
 
 
@@ -303,15 +275,14 @@ class Channel(commands.Cog):
         `Permissions:` Manage Channels
         `Command:` delete-channel(channel-mentioned:TextChannel|optional)
         """
+
+        if chan is None:
+            chan = msg.channel
+
+
         if chan is not None:
             await msg.send(f"Deleting {chan.name}...")
             await chan.delete()
-
-        if chan is None:
-            await msg.send(f"Deleting channel {msg.channel.name}...")
-            await asyncio.sleep(1)
-            await msg.channel.delete(reason=f'Command used by {msg.author.name}({msg.author.id})')
-
 
 
     #!-----------VOICE CHANNEL COMMADDS START HERE --------------!
