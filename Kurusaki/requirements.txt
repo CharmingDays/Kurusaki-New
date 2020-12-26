@@ -7,5 +7,4 @@ dnspython
 pymongo
 youtube-dl
 RandomWords
-bs4
 PyNaCl

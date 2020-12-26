@@ -6,6 +6,7 @@ import logging
 from discord.ext.commands import command
 from discord.ext import commands
 from discord.ext import tasks
+from ..Utils.util_func import random_color
 import datetime
 class Server(commands.Cog):
     """
@@ -14,10 +15,6 @@ class Server(commands.Cog):
     def __init__(self,client):
         self.bot=client
 
-
-    @property
-    def random_color(self):
-        return discord.Color.from_rgb(random.randint(1,255),random.randint(1,255),random.randint(1,255))
 
     @commands.guild_only()
     @commands.cooldown(type=commands.BucketType.channel,rate=1,per=3)
@@ -31,7 +28,7 @@ class Server(commands.Cog):
         emotes=""
         for emote in msg.guild.emojis:
             emotes+=f"<:{emote.name}:{emote.id}>"
-        emb=discord.Embed(title=f"{msg.guild.name} - {msg.guild.id}",description=msg.guild.description,color=self.random_color)
+        emb=discord.Embed(title=f"{msg.guild.name} - {msg.guild.id}",description=msg.guild.description,color=random_color())
         emb.set_thumbnail(url=msg.guild.icon_url)
         date=msg.guild.created_at
         emb.add_field(name="Created Date",value=f"{date.month}/{date.day}/{date.year} | {date.hour}:{date.minute}:{date.second} UTC")
@@ -181,7 +178,7 @@ class Server(commands.Cog):
                 return await ctx.send(f"The user with the ID: {_id} does not exist")
             return await ctx.send("Something went wrong ")
         
-        emb = discord.Embed(colour=self.random_color, description=f"{user.name} has been unbanned ✅")
+        emb = discord.Embed(colour=self.random_color(), description=f"{user.name} has been unbanned ✅")
         return await ctx.send(embed=emb)
 
 

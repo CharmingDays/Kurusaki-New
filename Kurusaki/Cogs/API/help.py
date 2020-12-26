@@ -24,24 +24,15 @@ class MyHelpCommand(commands.MinimalHelpCommand):
         aliases=f" {self.context.prefix}".join(command.aliases)
         if command.aliases:
             emb=discord.Embed(title=f"{self.context.prefix}{command.name} **|** {self.context.prefix}{aliases}", description=f"{command_doc}",color=self.random_color)
-            emb.set_footer(text='Help Menu')
+            # emb.set_footer(text='Help Menu')
             return await self.context.send(embed=emb)
 
 
         emb=discord.Embed(description=f"{self.context.prefix}{command.name}\n{command_doc}",color=self.random_color)
-        emb.set_footer(text='Command Help')
+        # emb.set_footer(text='Command Help')
         return await self.context.send(embed=emb)
 
     async def send_cog_help(self,cog):
-        internal_docs={
-            "economy":[
-                "`shop` - See the list of items that are avaliable to buy with the currency"
-                "`admin-econ-update` - Trigger the update of the economy database to mongoDB",
-                "`update-voice` - Update the database with thee current data in the memory",
-                "`voice-inc` - Add a user to voice database with value",
-                "`reset-voice-db` - Replace the current local data with the cloud"
-            ]
-        }
         cog_help=[]
         for i in cog.get_commands():
             if i.enabled is True:
@@ -53,11 +44,8 @@ class MyHelpCommand(commands.MinimalHelpCommand):
         names=' \n'.join(cog_help)
         emb=discord.Embed(title=f"**{cog.qualified_name}**",description=names,color=self.random_color)
         emb.set_thumbnail(url=self.context.guild.icon_url)
-        emb.set_footer(text='Cog Menu')
+        # emb.set_footer(text='Cog Menu')
         return await self.context.send(embed=emb)
-
-
-
 
 
 class Help(commands.Cog):

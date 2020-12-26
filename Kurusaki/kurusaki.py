@@ -1,51 +1,79 @@
-import json
 import discord,asyncio,os
 from discord.ext import commands
-from discord.ext.commands import Greedy
 from discord.ext import tasks
-import logging,random
+import random
 from dotenv import load_dotenv
+import pymongo
 load_dotenv()
 
 
+
+# server_prefixes = {}
+# bot_status = {}
+client = pymongo.MongoClient(os.getenv("MONGO"))
+
+def load_status():
+    gen_collection = client['Discord-Bot-Database']['General']
+    global bot_status
+    bot_status = gen_collection.find_one('bot_status')['kurusaki']
+    client.close()
+
+
+def load_custom_prefix():
+    gen_collection = client['Discord-Bot-Database']['General']
+    global server_prefixes
+    server_prefixes = gen_collection.find_one('bot_prefixes')
+    server_prefixes.pop('_id')
+    client.close()
+
+
+async def refresh_prefixes(Id,newPrefix):
+    if Id in server_prefixes:
+        server_prefixes[Id].append(newPrefix)
+
+    if Id not in server_prefixes:
+        server_prefixes[Id] = [newPrefix]
+    
 def get_prefix(bot, msg):
+    prefixes = ['s.']
+    if msg.guild.id is None: #NOTE  Inside DM
+        return commands.when_mentioned_or(*prefixes)(bot, msg)
 
-    if msg.guild is not None and msg.guild.id == 264445053596991498:
-        return commands.when_mentioned_or(*['k.'])(bot, msg)
 
-    prefixes = ['s.', 'k.']
+    if msg.guild.id == 264445053596991498: 
+        #TOP.GG
+        return commands.when_mentioned_or(*['s.'])(bot, msg)
 
-    return commands.when_mentioned_or(*prefixes)(bot, msg)
+    if str(msg.guild.id) in server_prefixes:
+        return commands.when_mentioned_or(*server_prefixes[str(msg.guild.id)])(bot,msg)
+
+    
+    return commands.when_mentioned_or(*prefixes)(bot, msg) #NOTE if server not in database
 
 
 bot = commands.Bot(command_prefix=get_prefix,description='A multipurpose discord bot',case_insensitive=True,owner_id=185181025104560128)
 
 
-
-listening=discord.ActivityType.listening
-watching=discord.ActivityType.watching
-playing=discord.ActivityType.playing
-bot_statuses=[('SING - Moonlight Thoughts','Twice - Likey',listening), 
-('Twice - Knock Knock',listening),('Twice - What is love?',listening),
-('T-ara Like The First Time',listening),('Girls Generation - Gee',listening),
-('T-ara - Holiday',listening),('League of Legends',playing),('Valorant',playing),
-('Overwatch',playing),('Silent Hill',watching),('Dexter',watching),('Supernatural',watching),
-('Yanxi Palace',watching)]
-
-
 async def change_interval():
-    timer=random.randint(20,360)
-    status_changer.change_interval(seconds=timer)
+    timer=random.randint(10,360)
+    status_changer.change_interval(minutes=timer)
 
 
-
-@tasks.loop(minutes=random.randint(20,360))
+@tasks.loop(minutes=random.randint(5,360))
 async def status_changer():
-    random_status=random.choice(bot_statuses)
-    current_active = discord.Activity(name=random_status[0], type=random_status[1])
+    types = [['game',0],['music',2],['watch',3]]
+    ran =random.choice(types)
+    current_active = discord.Activity(name=random.choice(bot_status[ran[0]]), type=ran[1])
     await bot.change_presence(activity=current_active)
     await change_interval()
 
+
+
+async def first_status():
+    types = [['game',0],['music',2],['watch',3]]
+    ran =random.choice(types)
+    current_active = discord.Activity(name=random.choice(bot_status[ran[0]]), type=ran[1])
+    await bot.change_presence(activity=current_active)
 
 
 
@@ -53,8 +81,9 @@ async def status_changer():
 @bot.event
 async def on_ready():
     status_changer.start()
+    await first_status()
+    print(f"discord.py -- {discord.__version__}")
     print(f"{bot.user.name} is ready to run!")
-
 
 
 
@@ -63,22 +92,89 @@ async def on_disconnect():
     status_changer.stop()
 
 
+@bot.event
+async def on_command(msg):
+    if str(msg.guild.id) not in server_prefixes:
+        server_prefixes[str(msg.guild.id)] = ['s.']
+
+
+
+@commands.has_permissions(administrator=True)
+@bot.command(name='add-prefix')
+async def add_prefix(msg,*,prefix:str = None):
+    """
+    Add a custom server prefix
+    `CMD`: add-prefix(new_prefix:Required)
+    `Ex`: s.add-prefix !a.
+    `Permissions`: Administrator
+    """
+
+    if prefix is None:
+        return await msg.send("Please enter a prefix with the command. Type `s.help add-prefix` for command docs")
+
+    if str(msg.guild.id) in server_prefixes:
+        if prefix in server_prefixes[str(msg.guild.id)]:
+            return await msg.send(f"Server prefix `{prefix}` already in database")
+        
+        if len(server_prefixes[str(msg.guild.id)]) > 3:
+            return await msg.send(f"Only premium members can have more than 2 custom server prefixes.\nYou can use s.remove-prefix on the default prefix.\nUse command `s.premium` to find out how to get premium.")
+
+        else:
+            server_prefixes[str(msg.guild.id)].append(prefix)
+            return await msg.send(f"New prefix `{prefix}` added to server.")
+            
+    
+    if str(msg.guild.id) not in server_prefixes:
+        server_prefixes[str(msg.guild.id)]= [prefix]
+        return await msg.send(f"New prefix `{prefix}` added to server.")
+
+
+@commands.has_permissions(administrator=True)
+@bot.command(name='del-prefix',aliases=['remove-prefix'])
+async def remove_prefix(msg,*,prefix:str = None):
+    """
+    remove a custom or default bot prefix for your server
+    `CMD`: remove-prefix(current_prefix:Required)
+    `Ex`: s.del-prefix !a.
+    `Permissions`: Administrator
+    """
+    if prefix is None:
+        return await msg.send("Please enter a prefix to remove with the command. Use `s.del-prefix` to view the docs")
+
+    if str(msg.guild.id) not in server_prefixes:
+        server_prefixes[str(msg.guild.id)] = ['s.']
+        await msg.send("Something went wrong while trying to add the command, please try again later.")
+    
+    if str(msg.guild.id) in server_prefixes:
+        if prefix not in server_prefixes[str(msg.guild.id)]:
+            return await msg.send(f"Prefix `{prefix}` not found")
+
+        if len(server_prefixes[str(msg.guild.id)]) == 1:
+            return await msg.send("You can not remove the last prefix because the bot requires at least one prefix")
+        
+        try:
+            server_prefixes[str(msg.guild.id)].remove(prefix)
+            return await msg.send(f"Prefix `{prefix}` has been removed.")
+        except KeyError:
+            return await msg.send(f"Prefix `{prefix}` not found.")
+
+
 
 extensions=[
-    'Cogs.Moderation.member',
-    # 'Cogs.Fun.utility',
-    'Cogs.Moderation.channels',
-    "Cogs.Moderation.guild",
-    # "Cogs.Fun.music",
-    'Cogs.Moderation.help',
-    'Cogs.Events.background_events'
+    'Cogs.API.channels',
+    'Cogs.API.help'
     ]
 
-\
 
-for ext in extensions:
-    bot.load_extension(ext)
-    print("Loaded",ext)
+load_status()
+load_custom_prefix()
+def loadCogs():
+    for ext in extensions:
+        bot.load_extension(ext)
+
+
+
+loadCogs()
 
 
 bot.run(os.getenv('TOKEN'),reconnect=True)
