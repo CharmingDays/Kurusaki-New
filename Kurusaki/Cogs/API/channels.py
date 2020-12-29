@@ -377,7 +377,6 @@ class Channel(commands.Cog):
                 await user.move_to(channel=None)
             except Exception as Error:
                 failed.append(user.name)
-                print(Error, "disconnect CMD")
 
         if failed:
             await msg.send(f"Cold not disconnect user(s) {' '.join(failed)}")

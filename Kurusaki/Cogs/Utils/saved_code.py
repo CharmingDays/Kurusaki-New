@@ -11,6 +11,47 @@
 
 
 
+
+
+
+    # @commands.Cog.listener('on_command_error')
+    # async def all_command_error(self,msg,error):
+    #     #TODO: Attempt to make a correction suggestion here using `re` lib
+    #     if isinstance(error,commands.CommandOnCooldown):
+    #         return await msg.send(f"Command is on cooldown, please try again in {round(error.cooldown.retry_after,2)} seconds")
+
+    
+    #     if isinstance(error,commands.CommandError):
+    #         if '60003' in error.args[0]:
+    #             return await msg.send("Two factor is enabled for the server, please disable it temporarily to use the command")
+
+    #         else:
+    #             return error
+
+    #     if isinstance(error,commands.PrivateMessageOnly):
+    #         return await msg.send("This command can only be used inside a private message (PM/DM)")
+
+    #     if error is commands.NoPrivateMessage:
+    #         return await msg.send("Command unable to run inside a private message (PM/DM")
+
+
+    #     if isinstance(error,commands.CommandNotFound) and msg.guild is not None and msg.guild.id != 264445053596991498:
+    #         content=msg.message.content.replace(f"{msg.prefix}","")
+    #         return await msg.send(f"Command {content} is not found")
+
+
+    #     if isinstance(error,commands.NotOwner):
+    #         return await msg.send("This command is only for the bot owners")
+
+    #     print(error)
+
+
+
+
+
+
+
+
 #NOTE: SAVED FOR LATER WHEN PERMISSIONS BETTER MANAGED 
 # @commands.is_owner()
 # @command(hidden=True)

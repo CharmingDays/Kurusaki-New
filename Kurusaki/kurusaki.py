@@ -1,4 +1,5 @@
 import discord,asyncio,os
+from discord import permissions
 from discord.ext import commands
 from discord.ext import tasks
 import random
@@ -8,21 +9,25 @@ load_dotenv()
 
 
 
-# server_prefixes = {}
-# bot_status = {}
+extensions=[
+    'Cogs.API.channels',
+    'Cogs.API.help',
+    'Cogs.API.events',
+    'Cogs.API.guild'
+    ]
+
 client = pymongo.MongoClient(os.getenv("MONGO"))
+gen_collection = client['Discord-Bot-Database']['General']
 
 def load_status():
-    gen_collection = client['Discord-Bot-Database']['General']
     global bot_status
-    bot_status = gen_collection.find_one('bot_status')['kurusaki']
+    bot_status = gen_collection.find_one({'_id':'bot_status'})['kurusaki']
     client.close()
 
 
 def load_custom_prefix():
-    gen_collection = client['Discord-Bot-Database']['General']
     global server_prefixes
-    server_prefixes = gen_collection.find_one('bot_prefixes')
+    server_prefixes = gen_collection.find_one({'_id':'bot_prefixes'})
     server_prefixes.pop('_id')
     client.close()
 
@@ -100,7 +105,7 @@ async def on_command(msg):
 
 
 @commands.has_permissions(administrator=True)
-@bot.command(name='add-prefix')
+@bot.command(name='add-prefix',hidden=True,enabled=False)
 async def add_prefix(msg,*,prefix:str = None):
     """
     Add a custom server prefix
@@ -121,16 +126,19 @@ async def add_prefix(msg,*,prefix:str = None):
 
         else:
             server_prefixes[str(msg.guild.id)].append(prefix)
+            gen_collection.update_one({'_id':'bot_prefixes'},{'$push':{str(msg.guild.id):prefix}})
             return await msg.send(f"New prefix `{prefix}` added to server.")
             
     
     if str(msg.guild.id) not in server_prefixes:
+        gen_collection.update_one({'_id':'bot_prefixes'},{'$push':{str(msg.guild.id):prefix}})
         server_prefixes[str(msg.guild.id)]= [prefix]
+
         return await msg.send(f"New prefix `{prefix}` added to server.")
 
 
 @commands.has_permissions(administrator=True)
-@bot.command(name='del-prefix',aliases=['remove-prefix'])
+@bot.command(name='del-prefix',aliases=['remove-prefix'],hidden=True,enabled=False)
 async def remove_prefix(msg,*,prefix:str = None):
     """
     remove a custom or default bot prefix for your server
@@ -154,16 +162,29 @@ async def remove_prefix(msg,*,prefix:str = None):
         
         try:
             server_prefixes[str(msg.guild.id)].remove(prefix)
+            gen_collection.update_one({'_id':'bot_prefixes'},{'$pull':{str(msg.guild.id):prefix}})
             return await msg.send(f"Prefix `{prefix}` has been removed.")
         except KeyError:
             return await msg.send(f"Prefix `{prefix}` not found.")
 
 
 
-extensions=[
-    'Cogs.API.channels',
-    'Cogs.API.help'
-    ]
+
+@bot.command()
+async def premium(msg):
+    """
+    Tells you how to get premium  for Kurusaki
+    `CMD`: premium()
+    `Ex`: s.premium
+    """
+    pass
+
+
+
+
+
+mute_timer = {
+}
 
 
 load_status()
