@@ -363,7 +363,7 @@ class Channel(commands.Cog):
 
 
     @commands.has_permissions(manage_channels=True)
-    @command(name="disconnect",aliases=['kick-voice','kickVoice'])
+    @command(name="disconnect-voice",aliases=['kick-voice','kickVoice'])
     async def kick_voice(self,msg,users:commands.Greedy[discord.Member]):
         """
         Kick/disconnect mentioned member(s) from a voice channel

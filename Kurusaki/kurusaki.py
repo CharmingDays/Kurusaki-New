@@ -12,9 +12,16 @@ load_dotenv()
 extensions=[
     'Cogs.API.channels',
     'Cogs.API.help',
-    'Cogs.API.events',
-    'Cogs.API.guild'
+    # 'Cogs.API.events',
+    'Cogs.API.guild',
+    'Cogs.Fun.lava'
     ]
+
+
+def load_cogs():
+    for ext in extensions:
+        bot.load_extension(ext)
+
 
 client = pymongo.MongoClient(os.getenv("MONGO"))
 gen_collection = client['Discord-Bot-Database']['General']
@@ -89,6 +96,7 @@ async def on_ready():
     await first_status()
     print(f"discord.py -- {discord.__version__}")
     print(f"{bot.user.name} is ready to run!")
+    load_cogs()
 
 
 
@@ -126,12 +134,12 @@ async def add_prefix(msg,*,prefix:str = None):
 
         else:
             server_prefixes[str(msg.guild.id)].append(prefix)
-            gen_collection.update_one({'_id':'bot_prefixes'},{'$push':{str(msg.guild.id):prefix}})
+            gen_collection.update_one({'_id':'bot_prefixes'},{'$addToSet':{str(msg.guild.id):{"$each":[prefix,'s.']}}})
             return await msg.send(f"New prefix `{prefix}` added to server.")
             
     
     if str(msg.guild.id) not in server_prefixes:
-        gen_collection.update_one({'_id':'bot_prefixes'},{'$push':{str(msg.guild.id):prefix}})
+        gen_collection.update_one({'_id':'bot_prefixes'},{'$addToSet':{str(msg.guild.id):{"$each":[prefix,'s.']}}})
         server_prefixes[str(msg.guild.id)]= [prefix]
 
         return await msg.send(f"New prefix `{prefix}` added to server.")
@@ -169,6 +177,15 @@ async def remove_prefix(msg,*,prefix:str = None):
 
 
 
+@bot.command()
+async def prefixes(msg):
+    if str(msg.guild.id) in server_prefixes:
+        return await msg.send(f"{msg.guild.name}'s prefixe(s):  {', '.join(server_prefixes[str(msg.guild.id)])}")
+    
+    return await msg.send(f"{msg.guild.name}'s prefixe(s): s.")
+
+
+
 
 @bot.command()
 async def premium(msg):
@@ -183,19 +200,8 @@ async def premium(msg):
 
 
 
-mute_timer = {
-}
-
 
 load_status()
 load_custom_prefix()
-def loadCogs():
-    for ext in extensions:
-        bot.load_extension(ext)
-
-
-
-loadCogs()
-
 
 bot.run(os.getenv('TOKEN'),reconnect=True)

@@ -2,6 +2,7 @@ import discord, asyncio, os
 from discord.ext import commands
 from discord.ext.commands import command, Cog
 import random,requests as rq
+from requests.api import request
 
 
 
@@ -36,6 +37,7 @@ class FunCommands(Cog,name='Fun Commands'):
         return await msg.send(ball_answers)
 
 
+
     @command()
     async def fox(self,msg):
         """
@@ -59,8 +61,8 @@ class FunCommands(Cog,name='Fun Commands'):
     async def cat(self,msg):
         """
         Get a picture of a random cat to make your day a little better
+        `CMD`: cat()
         `Ex`: s.cat
-        `Command`: cat()
         """
         api_key=os.getenv('CAT_API_KEY')
         cat=rq.get(f'https://api.thecatapi.com/v1/images/search?limit=1&page=1&api_key={api_key}')
@@ -79,8 +81,8 @@ class FunCommands(Cog,name='Fun Commands'):
     async def dog(self,msg):
         """
         Get a picture of a random dog to make your day a little better
+        `CMD`: dog()
         `Ex`: s.dog
-        `Command`: dog()
         """
         #NOTE:Alternative dog images
         #http://shibe.online/api/shibes?count=1&urls=true
@@ -96,6 +98,117 @@ class FunCommands(Cog,name='Fun Commands'):
         return await msg.send(embed=emb)
 
 
+
+    @command()
+    async def wallpaper(self,msg,width= 1920,length=1080,amts:int = 1):
+        #TODO: Testing required
+        """
+        Get a random wallpaper image
+        `CMD`: wallpaper(width:Optional,length:Optional,amounts:Optional)
+        `Ex`: s.wallpaper 1920 1080 3
+        `NOTE`: amount limit is 3
+        """
+        url = 'https://picsum.photos/1920/1080'
+        request_limit = 0
+        if amts > 3:
+            amts = 3
+            await msg.send(f"Wallpaper amount {amts} exceeds the limit of 3, defaulting it to 3")
+        
+        images = []
+        for i in range(amts):
+            data = rq.get(url)
+            while data.status_code != 200 and request_limit < 5:
+                data = rq.get(url)
+                request_limit+=1
+            if data.status_code == 200:
+                images.append(data.url)
+
+        if not images:
+            return await msg.send("Something went wrong while trying to retreive the wallpapers, please try again later.")
+
+
+        if len(images) < amts:
+            await msg.send(f"Something went wrong while trying to get the wallpapers. Could only get {len(images)}")
+
+        message = ""
+        for img in images:
+            message +=f"{img}\n"
+
+
+        return await msg.send(message)
+
+    @command()
+    async def fox(self,msg,amts:int = 1):
+        #TODO: Testing required
+        """
+        Get a random fox picture
+        `CMD`: fox(amounts:Optional)
+        `Ex`: s.fox 3
+        `NOTE`: amount limit is 3
+        """
+        url = 'https://randomfox.ca/floof'
+        request_limit = 0
+        if amts > 3:
+            amts = 3
+            await msg.send(f"Fox picture amount {amts} exceeds the limit of 3, defaulting it to 3")
+        
+        images = []
+        for i in range(amts):
+            data = rq.get(url)
+            while data.status_code != 200 and request_limit < 5:
+                data = rq.get(url)
+                request_limit+=1
+            if data.status_code == 200:
+                images.append(data.json()['image'])
+
+        if not images:
+            return await msg.send("Something went wrong while trying to retreive the fox images, please try again later.")
+
+
+        if len(images) < amts:
+            await msg.send(f"Something went wrong while trying to get the fox images. Could only get {len(images)}")
+
+        message = ""
+        for img in images:
+            message +=f"{img}\n"
+
+
+        return await msg.send(message)
+
+    @command()
+    async def shiba(self,msg,amts:int = 1):
+        #TODO: Testing required
+        """
+        Get a random shiba picture
+        `CMD`: shiba(amounts:Optional)
+        `Ex`: s.shiba 3
+        `NOTE`: amount limit is 10
+        """
+        url = f'http://shibe.online/api/shibes?count={amts}&urls=true&httpsUrls=true'
+        request_limit = 0
+        if amts > 10:
+            amts = 10
+            await msg.send(f"Shiba picture amount {amts} exceeds the limit of 3, defaulting it to 3")
+
+        data = rq.get(url)
+        while data.status_code != 200:
+            data = rq.get(url)
+        
+        images = data.json()
+
+        if not images:
+            return await msg.send("Something went wrong while trying to retreive the images, please try again later.")
+
+
+        if len(images) < amts:
+            await msg.send(f"Something went wrong while trying to get the images. Could only get {len(images)}")
+
+        message = ""
+        for img in images:
+            message +=f"{img}\n"
+
+
+        return await msg.send(message)
 
 
 

@@ -8,6 +8,7 @@ from discord.utils import sleep_until
 
 
 class Utility(commands.Cog):
+    #TODO: Calendar reminder for users
     def __init__(self,bot):
         self.bot=bot
 
