@@ -9,7 +9,4 @@ youtube-dl
 RandomWords
 PyNaCl
 lavalink
-aiohttp==3.6.3
-chardet==3.0.4
-cchardet
 aiodns
